@@ -254,8 +254,7 @@ int fuji_ois_init_cmd(int limit, int ver)
 		RegWriteA(0x609D,0xFFFF & (uint16_t)gyro_signed_offset_y);	
 
 		RegWriteA(0x6023, 0x04);
-		pr_info("%s done\n", __func__);
-		usleep(50000); /* wait 50ms */
+		usleep(200000); /* wait 200ms */
 
 		break;
 	}

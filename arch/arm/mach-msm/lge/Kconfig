@@ -5,7 +5,6 @@ menu "LGE Board Selection"
 
 source "arch/arm/mach-msm/lge/8974-g2/Kconfig"
 source "arch/arm/mach-msm/lge/8974ac-g3/Kconfig"
-source "arch/arm/mach-msm/lge/8974ac-dzny/Kconfig"
 
 menuconfig LGE_SPECIFIC_PATCHES
     depends on MACH_LGE
@@ -105,20 +104,5 @@ config LGE_LCD_OFF_DIMMING
 	depends on MACH_LGE
 	help
 	  Support lcd off or dimming reboot when reboot reason is "LCD off". lcd stay dimming until lcd is off and on again.
-
-config LGE_LIMIT_FREQ_TABLE
-    bool "Set limitation to cpu frquency for manufacturing"
-    default n
-    depends on MACH_LGE
-    help
-      set limitation to cpu frquency for manufacturing
-
-config LGE_GDSC_SWCONTROL
-	bool "Support to use controlling gdsc by sw for msm8974AA"
-	default n
-	depends on MACH_LGE
-	help
-	  When enable this, LGE's sw control code for gdsc enable and diasble
-	  are used. Normally, msm8974AA chipset based LGE model may use it.
 
 endmenu

@@ -17,7 +17,12 @@
  *---------------------------------------------------------------------------*/
 
 &mdss_dsi0 {
-	/delete-node/ qcom,platform-supply-entry1;
+	qcom,platform-enable-gpio = <&msmgpio 58 0>;
+	qcom,platform-te-gpio = <&msmgpio 12 0>;
+	qcom,platform-reset-gpio = <&pm8941_gpios 19 0>;
+	qcom,platform-supply-entry1 {
+		lge,mdss-dsi-use-supply = <0>;
+	};
 };
 
 &mdss_dsi1 {
@@ -25,7 +30,6 @@
 };
 
 &mdss_mdp {
-		/delete-property/ qcom,mdss-ad-off;
 		qcom,mdss_fb_primary {
 			qcom,memory-reservation-size = <0x1000000>;
 			qcom,mdss-pref-prim-intf = "dsi";
@@ -618,8 +622,6 @@ mdss_dsi_tigers_lgd_cmd: qcom,mdss_dsi_tigers_lgd_cmd {
 
 		qcom,mdss-dsi-on-command-state = "dsi_lp_mode";
 		qcom,mdss-dsi-off-command-state = "dsi_hs_mode";
-		qcom,mdss-pan-physical-width-dimension = <65>;
-		qcom,mdss-pan-physical-height-dimension = <115>;
 		qcom,mdss-dsi-h-sync-pulse = <0>;
 		qcom,mdss-dsi-traffic-mode = "non_burst_sync_event";
 		qcom,mdss-dsi-lane-map = "lane_map_0123";
@@ -815,8 +817,6 @@ mdss_dsi_tigers_jdi_cmd: qcom,mdss_dsi_tigers_jdi_cmd {
 
 		qcom,mdss-dsi-on-command-state = "dsi_lp_mode";
 		qcom,mdss-dsi-off-command-state = "dsi_hs_mode";
-		qcom,mdss-pan-physical-width-dimension = <65>;
-		qcom,mdss-pan-physical-height-dimension = <115>;
 		qcom,mdss-dsi-h-sync-pulse = <0>;
 		qcom,mdss-dsi-traffic-mode = "non_burst_sync_event";
 		qcom,mdss-dsi-lane-map = "lane_map_0123";
@@ -1051,8 +1051,6 @@ mdss_dsi_b1_lgd_cmd: qcom,mdss_dsi_b1_lgd_cmd {
 		qcom,mdss-dsi-border-color = <0>;
 		qcom,mdss-dsi-reset-sequence = <0 5 1 1 0 3 1 10>;
 		qcom,cont-splash-enabled;
-		qcom,mdss-pan-physical-width-dimension = <74>;
-		qcom,mdss-pan-physical-height-dimension = <132>;
 
 		qcom,mdss-dsi-on-command-state = "dsi_lp_mode";
 		qcom,mdss-dsi-off-command-state = "dsi_hs_mode";
@@ -2020,7 +2018,7 @@ mdss_dsi_lgd_960p_video: qcom,mdss_dsi_lgd_960p_video {
 			lm3630,lcd_bl_en = <&msmgpio 49 0x00>;
 			lm3630,max_current = <0x17>;
 			lm3630,min_brightness = <0x05>;
-			lm3630,default_brightness = <233>;
+			lm3630,default_brightness = <0x9C>;
 			lm3630,max_brightness = <0xFF>;
 			lm3630,enable_pwm = <0>;
 			lm3630,blmap_size = <256>;
@@ -2051,7 +2049,7 @@ mdss_dsi_lgd_960p_video: qcom,mdss_dsi_lgd_960p_video {
 			lm3630,lcd_bl_en = <&msmgpio 91 0x00>;
 			lm3630,max_current = <0x17>;
 			lm3630,min_brightness = <0x05>;
-			lm3630,default_brightness = <233>;
+			lm3630,default_brightness = <0x9C>;
 			lm3630,max_brightness = <0xFF>;
 			lm3630,enable_pwm = <0>;
 			lm3630,blmap_size = <256>;
@@ -2082,7 +2080,7 @@ mdss_dsi_lgd_960p_video: qcom,mdss_dsi_lgd_960p_video {
 			lm3630,lcd_bl_en = <&msmgpio 49 0x00>;
 			lm3630,max_current = <0x17>;
 			lm3630,min_brightness = <0x05>;
-			lm3630,default_brightness = <233>;
+			lm3630,default_brightness = <0x9C>;
 			lm3630,max_brightness = <0xFF>;
 			lm3630,enable_pwm = <0>;
 			lm3630,blmap_size = <256>;

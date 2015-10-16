@@ -73,69 +73,6 @@ static struct msm_sensor_power_setting imx208_power_setting_rev_b[] = {
 		.delay = 10,
 	},
 };
-#elif defined(CONFIG_MACH_MSM8974_TIGERS_KR) || defined(CONFIG_MACH_MSM8974_B1_KR) || defined(CONFIG_MACH_MSM8974_B1W)
-static struct msm_sensor_power_setting imx208_power_setting_rev_b[] = {
-	{  /* Set GPIO_RESET to low to disable power on reset*/
-		.seq_type = SENSOR_GPIO,
-		.seq_val = SENSOR_GPIO_RESET,
-		.config_val = GPIO_OUT_LOW,
-		.delay = 1,
-	},
-#if defined(CONFIG_MACH_MSM8974_TIGERS_KR)
-	{
-		.seq_type = SENSOR_GPIO,
-		.seq_val = SENSOR_GPIO_VDIG,
-		.config_val = GPIO_OUT_HIGH,
-		.delay = 1,
-	},
-#else
-	{										//VDIG, PMIC_GPIO 10
-		.seq_type = SENSOR_GPIO,
-		.seq_val = SENSOR_GPIO_VANA,
-		.config_val = GPIO_OUT_HIGH,
-		.delay = 1,
-	},
-#endif
-	{
-		.seq_type = SENSOR_VREG,
-		.seq_val = CAM_VIO,
-		.config_val = 0,
-		.delay = 0,
-	},
-#if defined(CONFIG_MACH_MSM8974_TIGERS_KR)
-	{
-		.seq_type = SENSOR_VREG,
-		.seq_val = CAM_VANA,
-		.config_val = 0,
-		.delay = 1,
-	},
-#else
-	{
-		.seq_type = SENSOR_VREG,
-		.seq_val = CAM_VDIG,
-		.config_val = 0,
-		.delay = 1,
-	},
-#endif
-	{
-		.seq_type = SENSOR_GPIO,
-		.seq_val = SENSOR_GPIO_RESET,
-		.config_val = GPIO_OUT_HIGH,
-		.delay = 10,
-	},
-	{
-		.seq_type = SENSOR_CLK,
-		.seq_val = SENSOR_CAM_MCLK,
-		.config_val = 0,
-		.delay = 30,
-	},
-	{
-		.seq_type = SENSOR_I2C_MUX,
-		.seq_val = 0,
-		.config_val = 0,
-		.delay = 0,
-	},
-};
 #else
 static struct msm_sensor_power_setting imx208_power_setting_rev_b[] = {
 	{  /* Set GPIO_RESET to low to disable power on reset*/
@@ -314,13 +251,6 @@ static int __init imx208_init_module(void)
 				break;
 		}
 #endif
-
-#if defined(CONFIG_MACH_MSM8974_TIGERS_KR) || defined(CONFIG_MACH_MSM8974_B1_KR) || defined(CONFIG_MACH_MSM8974_B1W)
-		CDBG("%s: Sensor power is set for B1\n", __func__);
-		imx208_s_ctrl.power_setting_array.power_setting = imx208_power_setting_rev_b;
-		imx208_s_ctrl.power_setting_array.size = ARRAY_SIZE(imx208_power_setting_rev_b);
-#endif
-
 	rc = platform_driver_probe(&imx208_platform_driver,
 		imx208_platform_probe);
 	if (!rc) {

@@ -84,7 +84,7 @@ static ssize_t power_supply_show_property(struct device *dev,
 	static char *type_text[] = {
 		"Unknown", "Battery", "UPS", "Mains", "USB",
 		"USB_DCP", "USB_CDP", "USB_ACA",
-#if defined(CONFIG_CHARGER_UNIFIED_WLC) || defined(CONFIG_WIRELESS_CHARGER)
+#if defined(CONFIG_CHARGER_UNIFIED_WLC)
 		"Wireless"
 #endif
 	};
@@ -290,20 +290,12 @@ static struct device_attribute power_supply_attrs[] = {
 	POWER_SUPPLY_ATTR(ext_pwr),
 	POWER_SUPPLY_ATTR(removed),
 #endif
-#if defined(CONFIG_VZW_POWER_REQ) || defined(CONFIG_SMB349_VZW_FAST_CHG)
+#if defined(CONFIG_VZW_POWER_REQ)
 	POWER_SUPPLY_ATTR(vzw_chg),
 #endif
-#if defined(CONFIG_CHARGER_MAX77819) || defined(CONFIG_CHARGER_MAX8971) || \
-    defined(CONFIG_BQ24296_CHARGER) || defined(CONFIG_SMB349_CHARGER)
+#if defined(CONFIG_CHARGER_MAX77819) || defined(CONFIG_CHARGER_MAX8971) || defined(CONFIG_BQ24296_CHARGER)
 	POWER_SUPPLY_ATTR(charger_timer),
 	POWER_SUPPLY_ATTR(charging_complete),
-#endif
-#ifdef CONFIG_FTT_CHARGER_V3
-	POWER_SUPPLY_ATTR(ftt_anntena_level),
-#endif
-#ifdef CONFIG_MAX17050_FUELGAUGE
-	POWER_SUPPLY_ATTR(battery_condition),
-	POWER_SUPPLY_ATTR(battery_age),
 #endif
 #if defined(CONFIG_CHARGER_UNIFIED_WLC)
 	POWER_SUPPLY_ATTR(wireless_charger_switch),

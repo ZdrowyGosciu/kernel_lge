@@ -117,7 +117,7 @@ static const char longname[] = "Gadget Android";
 #define PRODUCT_ID		0x0001
 
 #define ANDROID_DEVICE_NODE_NAME_LENGTH 11
-#ifdef CONFIG_USB_EMBEDDED_BATTERY_REBOOT
+#ifdef CONFIG_MACH_MSM8974_G3_KDDI
 static int firstboot_check = 1;
 #endif
 
@@ -433,7 +433,7 @@ static void android_work(struct work_struct *data)
 			 dev->connected, dev->sw_connected, cdev->config);
 	}
 
-#ifdef CONFIG_USB_EMBEDDED_BATTERY_REBOOT
+#ifdef CONFIG_MACH_MSM8974_G3_KDDI
 	/*
 	* B2 KDDI models  : embedded type
 	*	 * This reset scenario for 56K cable is from factory's request and

@@ -115,16 +115,6 @@ static struct qfprom_blow_data blow_data[] = {
 		{ QFPROM_CHECK_HW_KEY,		0x0,            0x0	  },
 		{ QFPROM_RD_WR_PERMISSION, 	0x00400000, 	0xC5C28204},	    	/* READ WRITE PERMISSION */
 };
-#elif defined(CONFIG_MACH_MSM8974_G3)
-static struct qfprom_blow_data blow_data[] = {
-		/* Don't change array order !!!!!!!!!!!!!!*/
-		/* addr	 			 LSB		MSB*/
-		{ QFPROM_OEM_CONFIG, 		0x00310000, 	0x00000000},		/* OEM ID + OEM_PRODUCT_ID*/
-		{ QFPROM_SECURE_BOOT_ENABLE, 	0x00202020, 	0x00000000},		/* SECURE ENABLE */
-		{ QFPROM_DEBUG_DISABLE, 	0x3FC00000, 	0x040001FE},		/* JTAG DISABLE   */
-		{ QFPROM_CHECK_HW_KEY,		0x0,            0x0	  },
-		{ QFPROM_RD_WR_PERMISSION, 	0x00400000, 	0xC5C28204},	    	/* READ WRITE PERMISSION */
-};
 #else
 static struct qfprom_blow_data blow_data[] = {
 		/* Don't change array order !!!!!!!!!!!!!!*/
@@ -133,7 +123,7 @@ static struct qfprom_blow_data blow_data[] = {
 		{ QFPROM_SECURE_BOOT_ENABLE, 	0x00202020, 	0x00000000},		/* SECURE ENABLE */
 		{ QFPROM_DEBUG_DISABLE, 	0x3FC00000, 	0x040001FE},		/* JTAG DISABLE   */
 		{ QFPROM_CHECK_HW_KEY,		0x0,            0x0	  },
-		{ QFPROM_RD_WR_PERMISSION, 	0x00400000, 	0xC5C20200},	    	/* READ WRITE PERMISSION */
+		{ QFPROM_RD_WR_PERMISSION, 	0x00400000, 	0xC5C28204},	    	/* READ WRITE PERMISSION */
 };
 #endif
 

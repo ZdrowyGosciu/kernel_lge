@@ -61,7 +61,6 @@
 #include <linux/gpio.h>
 #include <asm/atomic.h>
 #include <asm/irq.h>
-#include <linux/pm_qos.h>
 
 #include <mach/sps.h>
 #include <mach/msm_serial_hs.h>
@@ -248,7 +247,6 @@ struct msm_hs_port {
 	/* BLSP UART required BUS Scaling data */
 	struct msm_bus_scale_pdata *bus_scale_table;
 	int rx_count_callback;
-	struct pm_qos_request pm_qos;
 	bool rx_bam_inprogress;
 	wait_queue_head_t bam_disconnect_wait;
 	bool obs;
@@ -333,9 +331,6 @@ static int msm_hs_clock_vote(struct msm_hs_port *msm_uport)
 
 	mutex_lock(&msm_uport->clk_mutex);
 	if (1 == atomic_inc_return(&msm_uport->clk_count)) {
-		pr_err("%s: entering\n", __func__);
-		MSM_HS_INFO("%s: QOS set 1\n", __func__);
-		pm_qos_update_request(&msm_uport->pm_qos, 1);
 		msm_hs_bus_voting(msm_uport, BUS_SCALING);
 		/* Turn on core clk and iface clk */
 		if (msm_uport->pclk) {
@@ -389,11 +384,8 @@ static void msm_hs_clock_unvote(struct msm_hs_port *msm_uport)
 		msm_hs_bus_voting(msm_uport, BUS_RESET);
 		msm_uport->clk_state = MSM_HS_CLK_OFF;
 		MSM_HS_DBG("%s: Clock OFF successful\n", __func__);
-		pm_qos_update_request(&msm_uport->pm_qos, PM_QOS_DEFAULT_VALUE);
-		MSM_HS_INFO("%s: QOS set Default\n", __func__);
 	}
 	mutex_unlock(&msm_uport->clk_mutex);
-
 }
 
 /* Check if the uport line number matches with user id stored in pdata.
@@ -3109,7 +3101,6 @@ static int __devinit msm_hs_probe(struct platform_device *pdev)
 		goto destroy_mutex;
 	}
 
-	pm_qos_add_request(&msm_uport->pm_qos, PM_QOS_CPU_DMA_LATENCY, PM_QOS_DEFAULT_VALUE);
 	msm_hs_clock_vote(msm_uport);
 
 	ret = uartdm_init_port(uport);

@@ -64,20 +64,14 @@
 #include <linux/qpnp/qpnp-adc.h>
 #include <mach/gpiomux.h>
 
-#ifdef CONFIG_LGE_HEADSET_MIC_NOISE_WA
-#include "../sound/soc/codecs/wcd9320.h"
-#endif
-
 #undef  LGE_HSD_DEBUG_PRINT /*TODO*/
 #define LGE_HSD_DEBUG_PRINT /*TODO*/
 #undef  LGE_HSD_ERROR_PRINT
 #define LGE_HSD_ERROR_PRINT
 
 #define HOOK_MIN		0
-#define HOOK_MAX		120000
-#define ASSIST_MIN      120001
-#define ASSIST_MAX      180000
-#define VUP_MIN			180001
+#define HOOK_MAX		150000
+#define VUP_MIN			150000
 #define VUP_MAX			400000
 #define VDOWN_MIN		400000
 #define VDOWN_MAX		650000
@@ -114,8 +108,6 @@ struct ear_3button_info_table {
 /* This table is only for J1 */
 static struct ear_3button_info_table max1462x_ear_3button_type_data[] = {
 	{KEY_MEDIA, HOOK_MAX, HOOK_MIN, 0},
-    {582,ASSIST_MAX, ASSIST_MIN, 0},
-//    {KEY_ASSIST,ASSIST_MAX, ASSIST_MIN, 0},
 	{KEY_VOLUMEUP, VUP_MAX, VUP_MIN, 0},
 	{KEY_VOLUMEDOWN, VDOWN_MAX, VDOWN_MIN, 0}
 };
@@ -217,7 +209,7 @@ static void button_pressed(struct work_struct *work)
 		return;
 	}
 
-	rc = qpnp_vadc_read_lge(P_MUX6_1_1,&result);
+	rc = qpnp_vadc_read(switch_vadc, P_MUX6_1_1, &result);
 
 	if (rc < 0) {
 		if (rc == -ETIMEDOUT) {
@@ -236,7 +228,7 @@ static void button_pressed(struct work_struct *work)
 		 */
 		if ((acc_read_value <= table->PERMISS_REANGE_MAX) &&
 				(acc_read_value >= table->PERMISS_REANGE_MIN)) {
-			HSD_DBG("%s: button_pressed  and acc_read_value :%d \n ", __func__, acc_read_value);
+			HSD_DBG("button_pressed \n");
 			atomic_set(&hi->btn_state, 1);
 			switch (table->ADC_HEADSET_BUTTON) {
 			case  KEY_MEDIA:
@@ -250,11 +242,6 @@ static void button_pressed(struct work_struct *work)
 			case KEY_VOLUMEDOWN:
 				input_report_key(hi->input, KEY_VOLUMEDOWN, 1);
 				pr_info("%s: KEY_VOLUMDOWN \n", __func__);
-				break;
-
-			case 582: //KEY_ASSIST
-				input_report_key(hi->input, 582, 1);
-				pr_info("%s: KEY_ASSIST \n", __func__);
 				break;
 			default:
 				break;
@@ -295,9 +282,6 @@ static void button_released(struct work_struct *work)
 				break;
 			case KEY_VOLUMEDOWN:
 				input_report_key(hi->input, KEY_VOLUMEDOWN, 0);
-				break;
-			case 582://KEY_ASSIST
-				input_report_key(hi->input, 582, 0);
 				break;
 			default:
 				break;
@@ -386,12 +370,8 @@ static void remove_headset(struct hsd_info *hi)
 	mutex_unlock(&hi->mutex_lock);
 
 	input_report_switch(hi->input, SW_HEADPHONE_INSERT, 0);
-	if (has_mic == LGE_HEADSET) {
+	if (has_mic == LGE_HEADSET)
 		input_report_switch(hi->input, SW_MICROPHONE_INSERT, 0);
-#ifdef CONFIG_LGE_HEADSET_MIC_NOISE_WA
-		taiko_dec5_vol_mute();
-#endif
-	}
 	input_sync(hi->input);
 
 	if (atomic_read(&hi->irq_key_enabled)) {
@@ -657,7 +637,6 @@ static int lge_hsd_probe(struct platform_device *pdev)
 	set_bit(SW_HEADPHONE_INSERT, hi->input->swbit);
 	set_bit(SW_MICROPHONE_INSERT, hi->input->swbit);
 	input_set_capability(hi->input, EV_KEY, KEY_MEDIA);
-	input_set_capability(hi->input, EV_KEY, 582);
 	input_set_capability(hi->input, EV_KEY, KEY_VOLUMEUP);
 	input_set_capability(hi->input, EV_KEY, KEY_VOLUMEDOWN);
 	ret = input_register_device(hi->input);

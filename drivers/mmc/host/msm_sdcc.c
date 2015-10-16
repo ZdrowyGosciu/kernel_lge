@@ -60,9 +60,6 @@
 #include <mach/mpm.h>
 #include <mach/msm_bus.h>
 
-#include <mach/board_lge.h> //to use lge_get_board_revno()
-
-
 #include "msm_sdcc.h"
 #include "msm_sdcc_dml.h"
 
@@ -4349,17 +4346,9 @@ retry:
 		 */
 		{
 			int bcmdhd_id = MMC_SDCC_CONTROLLER_INDEX_SDCC2;
-			#if defined (CONFIG_MACH_MSM8974_G2_KR) || defined(CONFIG_MACH_MSM8974_G2_KDDI) \
-				|| defined(CONFIG_MACH_MSM8974_VU3_KR) || defined(CONFIG_MACH_MSM8974_TIGERS_KR)
-			bcmdhd_id = MMC_SDCC_CONTROLLER_INDEX_SDCC3; /* sdcc 3 */
-			#elif defined(CONFIG_MACH_MSM8974_B1_KR) || defined(CONFIG_MACH_MSM8974_B1W)
-				if (HW_REV_B <= lge_get_board_revno() && HW_REV_D >= lge_get_board_revno()) {
-					bcmdhd_id = MMC_SDCC_CONTROLLER_INDEX_SDCC2; /* sdcc 2 */
-				} else {
-					bcmdhd_id = MMC_SDCC_CONTROLLER_INDEX_SDCC3;  /* sdcc 3 */
-				}
+			#if defined (CONFIG_MACH_MSM8974_G3_KDDI_EVB)
+			bcmdhd_id = 3; /* sdcc 3 */
 			#endif
-
 			if (host->pdev->id == bcmdhd_id) {
 				rc = 0;
 				/* panic("Failed to tune.\n"); please contact hayun.kim@lge.com */
@@ -6312,18 +6301,11 @@ msmsdcc_probe(struct platform_device *pdev)
 	{
 		int bcmdhd_id = MMC_SDCC_CONTROLLER_INDEX_SDCC2;
 	
-		#if defined (CONFIG_MACH_MSM8974_G2_KR) || defined(CONFIG_MACH_MSM8974_G2_KDDI) \
-		|| defined(CONFIG_MACH_MSM8974_VU3_KR) || defined(CONFIG_MACH_MSM8974_TIGERS_KR)
-		bcmdhd_id = MMC_SDCC_CONTROLLER_INDEX_SDCC3; /* sdcc 3 */
-		#elif defined(CONFIG_MACH_MSM8974_B1_KR) || defined(CONFIG_MACH_MSM8974_B1W)
-			if (HW_REV_B <= lge_get_board_revno() && HW_REV_D >= lge_get_board_revno()) {
-				bcmdhd_id = MMC_SDCC_CONTROLLER_INDEX_SDCC2; /* sdcc 2 */
-			} else {
-				bcmdhd_id = MMC_SDCC_CONTROLLER_INDEX_SDCC3;  /* sdcc 3 */
-			}
-		#endif
-
-		printk("jaewoo :%s-%d> plat->nonremovable = %d\n", __FUNCTION__, host->pdev->id, plat->nonremovable );
+        #if defined (CONFIG_MACH_MSM8974_G3_KDDI_EVB)
+    	bcmdhd_id = 3; /* sdcc 3 */
+	    #endif
+		
+        printk("jaewoo :%s-%d> plat->nonremovable = %d\n", __FUNCTION__, host->pdev->id, plat->nonremovable );
 		if( host->pdev->id == bcmdhd_id ) {
 			plat->register_status_notify = wcf_status_register;
 			plat->status = wcf_status;

@@ -334,14 +334,13 @@ static void __schBeaconProcessForSession( tpAniSirGlobal      pMac,
     tUpdateBeaconParams beaconParams;
     tANI_U8 sendProbeReq = FALSE;
     tpDphHashNode pStaDs = NULL;
-    tANI_U32   channelBondingMode;
 #ifdef WLAN_FEATURE_11AC
     tpSirMacMgmtHdr    pMh = WDA_GET_RX_MAC_HEADER(pRxPacketInfo);
     tANI_U16  aid;
     tANI_U8  operMode;
     tANI_U8  chWidth = 0;
 #endif
-#if defined FEATURE_WLAN_ESE || defined WLAN_FEATURE_VOWIFI
+#if defined FEATURE_WLAN_ESE || defined FEATURE_WLAN_VOWIFI
      tPowerdBm regMax = 0,maxTxPower = 0;
 #endif
 
@@ -376,16 +375,6 @@ static void __schBeaconProcessForSession( tpAniSirGlobal      pMac,
                           psessionEntry->currentOperChannel, pBeacon->channelNumber);)
            goto fail;
         }
-
-        if( RF_CHAN_14 >= psessionEntry->currentOperChannel )
-        {
-           channelBondingMode = pMac->roam.configParam.channelBondingMode24GHz;
-        }
-        else
-        {
-           channelBondingMode = pMac->roam.configParam.channelBondingMode5GHz;
-        }
-
         limDetectChangeInApCapabilities(pMac, pBeacon, psessionEntry);
         if(limGetStaHashBssidx(pMac, DPH_STA_HASH_INDEX_PEER, &bssIdx, psessionEntry) != eSIR_SUCCESS)
             goto fail;
@@ -487,11 +476,7 @@ static void __schBeaconProcessForSession( tpAniSirGlobal      pMac,
         // check for HT capability
         pStaDs = dphLookupHashEntry(pMac, pMh->sa, &aid,
                                     &psessionEntry->dph.dphHashTable);
-        /* Update the channel bonding mode only if channel bonding
-         * mode is enabled in INI.
-         */
-        if ( (pStaDs != NULL) &&
-              (WNI_CFG_CHANNEL_BONDING_MODE_DISABLE != channelBondingMode) )
+        if (pStaDs != NULL)
         {
            /* Following check is related to HT40 on 2.4GHz mode*/
            if ((pStaDs->htSecondaryChannelOffset !=
@@ -519,8 +504,7 @@ static void __schBeaconProcessForSession( tpAniSirGlobal      pMac,
            }
         }
         else
-           schLog(pMac, LOG1,
-                  FL("Self Entry missing in Hash Table or channel bonding mode is disabled"));
+           PELOGE(schLog(pMac, LOGE, FL("Self Entry missing in Hash Table"));)
     }
     /* TODO : Below condition checks can be merged with the if */
 #ifdef WLAN_FEATURE_11AC
@@ -531,12 +515,7 @@ static void __schBeaconProcessForSession( tpAniSirGlobal      pMac,
        // check for VHT capability
        pStaDs = dphLookupHashEntry(pMac, pMh->sa, &aid,
              &psessionEntry->dph.dphHashTable);
-
-       /* Update the channel bonding mode only if channel bonding
-        * mode is enabled in INI.
-        */
-       if ( (NULL != pStaDs)  &&
-            (WNI_CFG_CHANNEL_BONDING_MODE_DISABLE != channelBondingMode) )
+       if (NULL != pStaDs)
        {
           if (psessionEntry->vhtCapability && pBeacon->OperatingMode.present )
           {
@@ -645,12 +624,12 @@ static void __schBeaconProcessForSession( tpAniSirGlobal      pMac,
     }
 #endif
 
-#if defined (FEATURE_WLAN_ESE) || defined (WLAN_FEATURE_VOWIFI)
+#if defined (FEATURE_WLAN_ESE) || defined (FEATURE_WLAN_VOWIFI)
     /* Obtain the Max Tx power for the current regulatory  */
     regMax = cfgGetRegulatoryMaxTransmitPower( pMac, psessionEntry->currentOperChannel );
 #endif
 
-#if defined WLAN_FEATURE_VOWIFI
+#if defined FEATURE_WLAN_VOWIFI
     {
         tPowerdBm  localRRMConstraint = 0;
         if ( pMac->rrm.rrmPEContext.rrmEnable && pBeacon->powerConstraintPresent )
@@ -680,7 +659,7 @@ static void __schBeaconProcessForSession( tpAniSirGlobal      pMac,
     }
 #endif
 
-#if defined (FEATURE_WLAN_ESE) || defined (WLAN_FEATURE_VOWIFI)
+#if defined (FEATURE_WLAN_ESE) || defined (FEATURE_WLAN_VOWIFI)
     {
         //If maxTxPower is increased or decreased
         if( maxTxPower != psessionEntry->maxTxPower )

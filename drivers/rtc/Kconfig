@@ -17,7 +17,7 @@ menuconfig RTC_CLASS
 
 if RTC_CLASS
 
-config LGE_PM_RTC_PWROFF_ALARM
+config RTC_PWROFF_ALARM
 	bool "RTC pwroff alarm set"
 	default n
 	help

@@ -7,11 +7,11 @@ extern int get_fips_error_state(void);
 extern int get_cc_mode_state(void);
 #else
 #define fips_enabled 0
-static inline int get_fips_error_state(void)
+static inline int get_fips_error_state()
 {
 	return 0;
 }
-static inline int get_cc_mode_state(void)
+static inline int get_cc_mode_state()
 {
 	return 0;
 }

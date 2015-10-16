@@ -573,13 +573,8 @@ EXPORT_SYMBOL(mmc_start_idle_time_bkops);
  */
 static void mmc_wait_data_done(struct mmc_request *mrq)
 {
-	unsigned long flags;
-	struct mmc_context_info *context_info = &mrq->host->context_info;
-
-	spin_lock_irqsave(&context_info->lock, flags);
 	mrq->host->context_info.is_done_rcv = true;
 	wake_up_interruptible(&mrq->host->context_info.wait);
-	spin_unlock_irqrestore(&context_info->lock, flags);
 }
 
 static void mmc_wait_done(struct mmc_request *mrq)
@@ -639,10 +634,8 @@ static bool mmc_should_stop_curr_req(struct mmc_host *host)
 	    (host->areq->cmd_flags & REQ_FUA))
 		return false;
 
-	mmc_host_clk_hold(host);
 	remainder = (host->ops->get_xfer_remain) ?
 		host->ops->get_xfer_remain(host) : -1;
-	mmc_host_clk_release(host);
 	return (remainder > 0);
 }
 
@@ -667,7 +660,6 @@ static int mmc_stop_request(struct mmc_host *host)
 				mmc_hostname(host));
 		return -ENOTSUPP;
 	}
-	mmc_host_clk_hold(host);
 	err = host->ops->stop_request(host);
 	if (err) {
 		pr_err("%s: Call to host->ops->stop_request() failed (%d)\n",
@@ -702,7 +694,6 @@ static int mmc_stop_request(struct mmc_host *host)
 		goto out;
 	}
 out:
-	mmc_host_clk_release(host);
 	return err;
 }
 
@@ -725,7 +716,6 @@ static int mmc_wait_for_data_req_done(struct mmc_host *host,
 	struct mmc_context_info *context_info = &host->context_info;
 	bool pending_is_urgent = false;
 	bool is_urgent = false;
-	bool is_done_rcv = false;
 	int err, ret;
 	unsigned long flags;
 
@@ -736,10 +726,9 @@ static int mmc_wait_for_data_req_done(struct mmc_host *host,
 				 context_info->is_urgent));
 		spin_lock_irqsave(&context_info->lock, flags);
 		is_urgent = context_info->is_urgent;
-		is_done_rcv = context_info->is_done_rcv;
 		context_info->is_waiting_last_req = false;
 		spin_unlock_irqrestore(&context_info->lock, flags);
-		if (is_done_rcv) {
+		if (context_info->is_done_rcv) {
 			context_info->is_done_rcv = false;
 			context_info->is_new_req = false;
 			cmd = mrq->cmd;
@@ -3528,18 +3517,9 @@ int mmc_flush_cache(struct mmc_card *card)
 			pr_err("%s: cache flush timeout\n",
 					mmc_hostname(card->host));
 			rc = mmc_interrupt_hpi(card);
-#if defined(CONFIG_LGE_MMC_RESET_IF_HANG)
 			if (rc)
-            {
 				pr_err("%s: mmc_interrupt_hpi() failed (%d)\n",
 						mmc_hostname(host), rc);
-                err = -ENODEV;
-            }
-#else
-            if (rc)
-                pr_err("%s: mmc_interrupt_hpi() failed (%d)\n",
-                        mmc_hostname(host), rc);
-#endif
 		} else if (err) {
 			pr_err("%s: cache flush error %d\n",
 					mmc_hostname(card->host), err);

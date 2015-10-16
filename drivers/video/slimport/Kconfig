@@ -6,6 +6,7 @@ config SLIMPORT_ANX7816
 
 config SLIMPORT_DYNAMIC_HPD
 	tristate "ANX7816 support for dynamic HDMI HPD control"
+	depends on SLIMPORT_ANX7816
 	help
 	  Slimport set HPD when cable is connected,
 	  HDMI clk is off during slimport cable is not connected

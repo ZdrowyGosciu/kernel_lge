@@ -380,7 +380,7 @@ int rtc_set_alarm(struct rtc_device *rtc, struct rtc_wkalrm *alarm)
 }
 EXPORT_SYMBOL_GPL(rtc_set_alarm);
 
-#ifdef CONFIG_LGE_PM_RTC_PWROFF_ALARM
+#ifdef CONFIG_RTC_PWROFF_ALARM
 int rtc_set_po_alarm(struct rtc_device *rtc, struct rtc_wkalrm *alarm)
 {
 	int err;

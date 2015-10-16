@@ -302,11 +302,6 @@ struct dwc3_msm {
 	bool ext_chg_opened;
 	bool ext_chg_active;
 	struct completion ext_chg_wait;
-#ifdef CONFIG_USB_LGE_USB3_REDRIVER
-	struct regulator    *redriver_3p3;
-	unsigned int   usb3_rx_eq;
-	unsigned int usb3_tx_deemph;
-#endif
 };
 
 #define USB_HSPHY_3P3_VOL_MIN		3050000 /* uV */
@@ -321,10 +316,6 @@ struct dwc3_msm {
 #define USB_SSPHY_1P8_VOL_MAX		1800000 /* uV */
 #define USB_SSPHY_1P8_HPM_LOAD		23000	/* uA */
 
-#ifdef CONFIG_USB_LGE_USB3_REDRIVER
-#define USB_REDRIVER_VOL_MIN		3300000 /* uV */
-#define USB_REDRIVER_VOL_MAX		3300000 /* uV */
-#endif
 static struct usb_ext_notification *usb_ext;
 
 #ifdef CONFIG_DWC3_MSM_BC_12_VZW_SUPPORT
@@ -417,7 +408,7 @@ static void vzw_drv_check_state_work(struct work_struct *w)
 	queue_delayed_work(system_nrt_wq, &mdwc->drv_check_work, 0);
 }
 #endif
-#if defined(CONFIG_LGE_PM) && (defined(BQ24296_CHARGER) || defined(CONFIG_BQ24192_CHARGER))
+#if defined(CONFIG_LGE_PM) && defined(BQ24296_CHARGER)
 static int dwc3_pmic_write(struct spmi_controller *ctrl, u16 addr, u8 val)
 {
 	int rc;
@@ -1532,60 +1523,6 @@ put_1p8_lpm:
 	return rc < 0 ? rc : 0;
 }
 
-#ifdef CONFIG_USB_LGE_USB3_REDRIVER
-static int dwc3_redriver_ldo_init(struct dwc3_msm *dwc, int init)
-{
-	int rc = 0;
-
-	if (!init) {
-		regulator_set_voltage(dwc->redriver_3p3, 0, USB_REDRIVER_VOL_MAX);
-		return 0;
-	}
-
-	dwc->redriver_3p3 = devm_regulator_get(dwc->dev, "redriver_3p3");
-	if (IS_ERR(dwc->redriver_3p3)) {
-		dev_err(dwc->dev, "unable to get redriver 3p3\n");
-		return PTR_ERR(dwc->redriver_3p3);
-	}
-	rc = regulator_set_voltage(dwc->redriver_3p3,
-			USB_REDRIVER_VOL_MIN, USB_REDRIVER_VOL_MAX);
-	if (rc)
-		dev_err(dwc->dev, "unable to set voltage for redriver 3p3\n");
-
-	return rc;
-}
-
-static int dwc3_redriver_ldo_enable(struct dwc3_msm *dwc, int on)
-{
-	int rc = 0;
-
-	dev_dbg(dwc->dev, "reg (%s)\n", on ? "HPM" : "LPM");
-
-	if (!on)
-		goto disable_regulators;
-
-	rc = regulator_enable(dwc->redriver_3p3);
-	if (rc) {
-		dev_err(dwc->dev, "Unable to enable redriver_3p3\n");
-		goto put_3p3_lpm;
-	}
-
-	return 0;
-
-disable_regulators:
-	rc = regulator_disable(dwc->redriver_3p3);
-	if (rc)
-		dev_err(dwc->dev, "Unable to disable redriver_3p3\n");
-
-put_3p3_lpm:
-	rc = regulator_set_optimum_mode(dwc->redriver_3p3, 0);
-	if (rc < 0)
-		dev_err(dwc->dev, "Unable to set LPM of redriver_3p3\n");
-
-	return rc < 0 ? rc : 0;
-}
-#endif
-
 /*
  * Config Global Distributed Switch Controller (GDSC)
  * to support controller power collapse
@@ -1649,9 +1586,6 @@ static void dwc3_msm_ss_phy_reg_init(struct dwc3_msm *mdwc)
 {
 	u32 data = 0;
 
-#ifdef CONFIG_USB_LGE_USB3_REDRIVER
-	u32 val;
-#endif
 	/*
 	 * WORKAROUND: There is SSPHY suspend bug due to which USB enumerates
 	 * in HS mode instead of SS mode. Workaround it by asserting
@@ -1678,15 +1612,10 @@ static void dwc3_msm_ss_phy_reg_init(struct dwc3_msm *mdwc)
 	data |= (1 << 7);
 	data &= ~(0x7 << 8);
 #ifdef CONFIG_MACH_LGE
-#ifdef CONFIG_USB_LGE_USB3_REDRIVER
-	/* Set RX EQ 0 */
-	data |= (mdwc->usb3_rx_eq << 8);
-#else
 	if (ss_phy_override_rx_eq)
 		data |= (ss_phy_override_rx_eq << 8);
 	else
 		data |= (0x3 << 8);
-#endif
 #else
 	data |= (0x3 << 8);
 #endif
@@ -1724,20 +1653,8 @@ static void dwc3_msm_ss_phy_reg_init(struct dwc3_msm *mdwc)
 	 * TX_DEEMPH_3_5DB [13:8] to 22
 	 * LOS_BIAS [2:0] to 0x5
 	 */
-
-#ifdef CONFIG_USB_LGE_USB3_REDRIVER
-	/* 2013-11-11, changed by kwangjin1.lee
-	* In order to apply to Tx_De-emphasis about redriver set to 28 in B1_KR.
-	* tx_deemph value is changed for b1(22 -> 13)
-	*/
-		mdwc->usb3_tx_deemph &= 0x3f;
-		val = 0x7f00005 | (mdwc->usb3_tx_deemph << 8 );
-		dwc3_msm_write_readback(mdwc->base, SS_PHY_PARAM_CTRL_1,
-					0x07f03f07, val); // kwangjin1.lee change 0x07f01605 as val
-#else
 	dwc3_msm_write_readback(mdwc->base, SS_PHY_PARAM_CTRL_1,
 				0x07f03f07, 0x07f01605);
-#endif
 }
 
 static void dwc3_msm_update_ref_clk(struct dwc3_msm *mdwc)
@@ -2189,9 +2106,7 @@ static void dwc3_start_chg_det(struct dwc3_charger *charger, bool start)
 		dev_dbg(mdwc->dev, "canceling charging detection work\n");
 		cancel_delayed_work_sync(&mdwc->chg_work);
 		mdwc->chg_state = USB_CHG_STATE_UNDEFINED;
-#ifdef CONFIG_USB_DWC3_LGE_SINGLE_PSY
 		charger->chg_type = DWC3_INVALID_CHARGER;
-#endif
 		return;
 	}
 
@@ -2343,11 +2258,6 @@ static int dwc3_msm_suspend(struct dwc3_msm *mdwc)
 	dwc3_ssusb_config_vddcx(mdwc, 0);
 	if (!host_bus_suspend && !dcp)
 		dwc3_hsusb_config_vddcx(mdwc, 0);
-
-#ifdef CONFIG_USB_LGE_USB3_REDRIVER
-    dwc3_redriver_ldo_enable(mdwc, 0);
-#endif
-
 	pm_relax(mdwc->dev);
 	atomic_set(&mdwc->in_lpm, 1);
 
@@ -2412,10 +2322,6 @@ static int dwc3_msm_resume(struct dwc3_msm *mdwc)
 	/* add vote for controller power collapse */
 	if (!host_bus_suspend)
 		dwc3_msm_config_gdsc(mdwc, 1);
-
-#ifdef CONFIG_USB_LGE_USB3_REDRIVER
-    dwc3_redriver_ldo_enable(mdwc, 1);
-#endif
 
 	if (!host_bus_suspend)
 		clk_prepare_enable(mdwc->utmi_clk);
@@ -2762,7 +2668,7 @@ static int dwc3_msm_power_set_property_usb(struct power_supply *psy,
 		}
 		mdwc->vbus_active = val->intval;
 
-#if defined(CONFIG_LGE_PM) && (defined(BQ24296_CHARGER) || defined(CONFIG_BQ24192_CHARGER))
+#if defined(CONFIG_LGE_PM) && defined(BQ24296_CHARGER)
 		if (mdwc->vbus_active)
 			dwc3_pmic_usb_override(true);
 		else
@@ -3376,7 +3282,7 @@ static int __devinit dwc3_msm_probe(struct platform_device *pdev)
 	INIT_DELAYED_WORK(&mdwc->init_adc_work, dwc3_init_adc_work);
 	init_completion(&mdwc->ext_chg_wait);
 
-#if defined(CONFIG_LGE_PM) && (defined(BQ24296_CHARGER) || defined(CONFIG_BQ24192_CHARGER))
+#if defined(CONFIG_LGE_PM) && defined(BQ24296_CHARGER)
 	dwc3_pmic_usb_override(false);
 #endif
 	ret = dwc3_msm_config_gdsc(mdwc, 1);
@@ -3476,21 +3382,6 @@ static int __devinit dwc3_msm_probe(struct platform_device *pdev)
 		goto disable_utmi_clk;
 	}
 	clk_prepare_enable(mdwc->ref_clk);
-
-#ifdef CONFIG_USB_LGE_USB3_REDRIVER
-	ret = dwc3_redriver_ldo_init(mdwc, 1);
-	if (ret == 0) {
-		ret = dwc3_redriver_ldo_enable(mdwc, 1);
-		if (ret) {
-			dev_err(&pdev->dev, "redriver_3p3 enable failed\n");
-			dwc3_redriver_ldo_init(mdwc, 0);
-		}
-	}
-	of_property_read_u32(node, "qcom,usb3_rx_eq", &mdwc->usb3_rx_eq);
-	if(of_property_read_u32(node, "qcom,usb3_tx_deemph", &mdwc->usb3_tx_deemph) < 0) {
-			mdwc->usb3_tx_deemph = 22;
-		}
-#endif
 
 	of_get_property(node, "qcom,vdd-voltage-level", &len);
 	if (len == sizeof(tmp)) {
@@ -3925,10 +3816,6 @@ static int __devexit dwc3_msm_remove(struct platform_device *pdev)
 	dwc3_ssusb_ldo_init(mdwc, 0);
 	regulator_disable(mdwc->ssusb_vddcx);
 	dwc3_ssusb_config_vddcx(mdwc, 0);
-#ifdef CONFIG_USB_LGE_USB3_REDRIVER
-	dwc3_redriver_ldo_enable(mdwc, 0);
-	dwc3_redriver_ldo_init(mdwc, 0);
-#endif
 	clk_disable_unprepare(mdwc->core_clk);
 	clk_disable_unprepare(mdwc->iface_clk);
 	clk_disable_unprepare(mdwc->sleep_clk);

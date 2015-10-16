@@ -48,11 +48,6 @@
 #define MIPI_DSI_PANEL_720P_PT	8
 #define DSI_PANEL_MAX	8
 
-#if defined(CONFIG_LGE_MIPI_DZNY_JDI_INCELL_FHD_VIDEO_PANEL)
-#define DSV_TPS65132 1
-#define DSV_SM5107 2
-#define DSV_DW8768 3
-#endif
 enum {		/* mipi dsi panel */
 	DSI_VIDEO_MODE,
 	DSI_CMD_MODE,
@@ -299,12 +294,6 @@ int disp_en_gpio2;
 #ifdef CONFIG_MACH_LGE
 int io_gpio; /* for china model */
 #endif
-#ifdef CONFIG_LGE_MIPI_DZNY_JDI_INCELL_FHD_VIDEO_PANEL
-	int dsv_ena;
-	int dsv_enb;
-	int dsv_manufacturer;
-	struct notifier_block notif;
-#endif
 	struct pwm_device *pwm_bl;
 	struct dsi_drv_cm_data shared_pdata;
 	u32 pclk_rate;
@@ -390,11 +379,7 @@ void mdss_dsi_clk_deinit(struct mdss_dsi_ctrl_pdata *ctrl_pdata);
 int mdss_dsi_enable_bus_clocks(struct mdss_dsi_ctrl_pdata *ctrl_pdata);
 void mdss_dsi_disable_bus_clocks(struct mdss_dsi_ctrl_pdata *ctrl_pdata);
 int mdss_dsi_panel_reset(struct mdss_panel_data *pdata, int enable);
-#if defined(CONFIG_B1_LGD_PANEL)
-void mdss_dsi_free_gpios(struct mdss_dsi_ctrl_pdata *ctrl_pdata);
-int mdss_dsi_request_gpios(struct mdss_dsi_ctrl_pdata *ctrl_pdata);
-#endif
-#if defined(CONFIG_MACH_MSM8974_G3) || defined(CONFIG_MACH_MSM8974_DZNY)
+#ifdef CONFIG_MACH_MSM8974_G3
 void mdss_dsi_panel_io(struct mdss_panel_data *pdata, int enable);
 #endif
 void mdss_dsi_phy_disable(struct mdss_dsi_ctrl_pdata *ctrl);

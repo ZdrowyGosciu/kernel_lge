@@ -25,9 +25,6 @@
 #include <linux/power_supply.h>
 #include <linux/of_gpio.h>
 #include <mach/board_lge.h>
-#ifdef CONFIG_MAX17050_FUELGAUGE
-#include <linux/max17050_battery.h>
-#endif
 #ifdef CONFIG_MAX17048_FUELGAUGE
 #include <linux/max17048_battery.h>
 #endif
@@ -49,20 +46,14 @@
 #endif
 #endif
 #ifdef CONFIG_LGE_CHARGER_TEMP_SCENARIO
-#ifdef CONFIG_LGE_PM_CHARGING_TEMP_SCENARIO_V1_7
-#include <mach/lge_charging_scenario_v1_7.h>
-#else
 #include <mach/lge_charging_scenario.h>
-#endif
 #define MONITOR_BATTEMP_POLLING_PERIOD          (60*HZ)
 #endif
 #ifdef  CONFIG_SMB349_VZW_FAST_CHG
 #include <linux/slimport.h>
 #endif
-#ifdef CONFIG_MACH_MSM8974_G2_VZW
-#include <mach/board_lge.h>
-#endif
-#ifdef CONFIG_LGE_PM
+/* Todo the function of battery removed was disable because early bring up board uses embedded battery */
+#if 0 && defined(CONFIG_MACH_MSM8974_G3_LGU_EVB) //workaround
 #include <linux/qpnp/qpnp-temp-alarm.h>
 #endif
 
@@ -187,38 +178,6 @@ enum otg_current_limit {
 
 static enum otg_current_limit otg_limit_status = OTG_CURRENT_LIMIT_500;
 
-#ifdef CONFIG_SMB349_VZW_FAST_CHG
-enum vzw_chg_state {
-	VZW_NO_CHARGER 				= 0,
-	VZW_NORMAL_CHARGING			= 1,
-	VZW_NOT_CHARGING			= 2,
-	VZW_UNDER_CURRENT_CHARGING	= 3,
-	VZW_USB_DRIVER_UNINSTALLED  = 4,
-#ifdef CONFIG_VZW_LLK
-	VZW_LLK_NOT_CHARGING        = 5,
-#endif
-};
-
-static enum vzw_chg_state chg_state = VZW_NO_CHARGER;
-
-#define NOT_PRESENT 			0
-#define CHARGER_PRESENT 		1
-#define UNKNOWN_PRESENT 		2
-#define SLOW_PRESENT 		3
-#define USB_PRESENT             4
-
-static int vzw_chg_present = NOT_PRESENT;
-
-#define IS_OPEN_TA 0
-#define IS_USB_DRIVER_UNINSTALLED 1
-#define IS_USB_DRIVER_INSTALLED   2
-#define IS_USB_CHARGING_ENABLE    3
-
-static int usb_chg_state = IS_USB_DRIVER_INSTALLED;
-#ifdef CONFIG_VZW_LLK
-static int temp_state = 0;
-#endif
-#endif
 static const char * const smb349_chg_status[] = {
 	"none",
 	"pre-charge",
@@ -237,13 +196,7 @@ enum irqstat_idx {
 	IRQSTAT_NUM	= 6,
 };
 
-#define I2C_SUSPEND_WORKAROUND 1
-#define SMB349_BOOSTBACK_WORKAROUND 1
-
-#ifdef I2C_SUSPEND_WORKAROUND
-extern bool i2c_suspended;
-#endif
-
+#define SMB349_BOOSTBACK_WORKAROUND 0
 #if SMB349_BOOSTBACK_WORKAROUND
 #define DISABLE_CHG_INPUTFET BIT(0)
 bool   smb349_console_silent;
@@ -267,6 +220,7 @@ struct smb349_struct {
 	struct delayed_work  bb_rechg_work;
 	bool   is_rechg_work_trigger;
 	bool   global_is_bb_worker_eoc;
+	unsigned long irq_trigger_cnt;
 #endif
 	bool   is_phy_forced_on;
 
@@ -275,11 +229,9 @@ struct smb349_struct {
 	int		en_n_gpio;
 	int		chg_susp_gpio;
 	int		stat_gpio;
-#if defined(CONFIG_MACH_MSM8974_G2_KR) || defined(CONFIG_MACH_MSM8974_VU3_KR) || defined(CONFIG_MACH_MSM8974_TIGERS)
+#if defined(CONFIG_MACH_MSM8974_G3_LGU_EVB) || defined(CONFIG_MACH_MSM8974_G2_KR)
 	int		otg_en_gpio;
-#endif
-#ifdef CONFIG_LGE_PM
-	struct wake_lock	battgone_wake_lock;
+	//struct wake_lock	battgone_wake_lock;
 #endif
 	int		irq;
 #if defined(CONFIG_BQ51053B_CHARGER) && defined(CONFIG_WIRELESS_CHARGER)
@@ -298,9 +250,6 @@ struct smb349_struct {
 
 	struct delayed_work		irq_work;
 	struct delayed_work		polling_work;
-#ifdef CONFIG_MAX17050_FUELGAUGE
-	struct delayed_work		max17050_soc_work;
-#endif
 #ifdef CONFIG_LGE_CHARGER_TEMP_SCENARIO
 	struct delayed_work		battemp_work;
 	struct wake_lock		lcs_wake_lock;
@@ -325,10 +274,7 @@ struct smb349_struct {
 #if defined(CONFIG_LGE_PM_BATTERY_ID_CHECKER)
 	int batt_id_smem;
 #endif
-#if I2C_SUSPEND_WORKAROUND
-	struct delayed_work		check_suspended_work;
-	int suspended;
-#endif //I2C_SUSPEND_WORKAROUND
+
 };
 
 #if SMB349_BOOSTBACK_WORKAROUND
@@ -349,17 +295,6 @@ static void smb349_bb_worker_trigger(struct smb349_struct *smb349_chg,
 static int wireless_charging;
 #endif
 
-#ifdef CONFIG_MAX17050_FUELGAUGE
-/*junnyoung.jang@lge.com 20130326 Add battery condition */
-static int g_batt_soc;
-static int g_batt_vol;
-static int g_batt_age;
-static int g_batt_pre_soc;
-static int g_batt_pre_vol;
-static int g_batt_current;
-static int pseudo_batt_age_mode;
-#endif
-
 struct chg_ma_limit_entry {
 	int fast_chg_ma_limit;
 	int ac_input_ma_limit;
@@ -370,11 +305,6 @@ struct chg_ma_limit_entry {
 int batt_temp_old;
 int batt_current_old;
 #endif
-
-#ifdef CONFIG_LGE_PM
-extern int pm_batt_rt_sts;
-#endif
-
 
 static struct smb349_struct *the_smb349_chg;
 
@@ -721,12 +651,6 @@ static bool smb349_is_charger_present(struct i2c_client *client)
 
 	return power_ok;
 }
-#if defined(CONFIG_MAX17050_FUELGAUGE) || defined(CONFIG_VZW_LLK)
-bool external_smb349_is_charger_present(void)
-{
-	return smb349_is_charger_present(the_smb349_chg->client);
-}
-#endif
 
 static void smb349_pmic_usb_override_wrap(struct smb349_struct *smb349_chg, bool mode)
 {
@@ -797,10 +721,6 @@ static int smb349_get_prop_charge_type(struct smb349_struct *smb349_chg)
 		wake_lock_timeout(&smb349_chg->uevent_wake_lock, HZ*2);
 		if (status == SMB_CHG_STATUS_NONE) {
 			pr_debug("Charging stopped.\n");
-			#ifdef CONFIG_BQ51053B_CHARGER
-			if(smb349_chg->wlc_present && (status_c & BIT(5)))
-				wireless_charging_completed();
-			#endif
 			wake_unlock(&smb349_chg->chg_wake_lock);
 		} else {
 			pr_debug("Charging started.\n");
@@ -848,12 +768,7 @@ static int smb349_get_prop_batt_present(struct smb349_struct *smb349_chg)
 	pr_debug("smb349_get_prop_batt_present present=%d\n",
 		batt_present ? 1 : 0);
 
-	pr_debug("batt present  = %d / %d\n", batt_present ? 1 : 0, pm_batt_rt_sts);
-
-	if (!(batt_present ? 1 : 0) && !pm_batt_rt_sts)
-		return 0;
-	else
-		return 1;
+	return batt_present ? 1 : 0;
 }
 
 #define DEFAULT_VOLTAGE		4000000
@@ -891,19 +806,6 @@ static int get_prop_batt_voltage_now_bms(void)
 #endif
 }
 
-#ifdef CONFIG_MAX17050_FUELGAUGE
-static int get_prop_batt_voltage_now_max17050(void)
-{
-#ifdef CONFIG_MAX17050_FUELGAUGE
-	int voltage = 0;
-	voltage = max17050_get_battery_mvolts() * 1000;
-	return voltage;
-#else
-	pr_err("CONFIG_MAX17050_FUELGAUGE is not defined.\n");
-	return DEFAULT_VOLTAGE;
-#endif
-}
-#endif
 static int get_prop_batt_voltage_now_max17048(void)
 {
 #ifdef CONFIG_MAX17048_FUELGAUGE
@@ -916,82 +818,10 @@ static int get_prop_batt_voltage_now_max17048(void)
 #endif
 }
 
-#ifdef CONFIG_MAX17050_FUELGAUGE
-/*junnyoung.jang@lge.com 20130326 Add battery condition */
-void lge_pm_battery_age_update(void)
-{
-	if (pseudo_batt_age_mode)
-		return;
-
-#if defined(CONFIG_MACH_MSM8974_G2_DCM)
-	if (lge_get_board_revno() > HW_REV_A)
-		g_batt_age = max17050_get_battery_age();
-	else
-		g_batt_age = 100;
-#else
-	g_batt_age = 100;
-#endif
-}
-int lge_pm_get_battery_age(void)
-{
-	if (g_batt_age == 0)
-		lge_pm_battery_age_update();
-
-	return g_batt_age;
-}
-int lge_pm_get_battery_condition(void)
-{
-	int batt_age = lge_pm_get_battery_age();
-	int batt_condition = 0;
-
-	if (batt_age == 999)
-		/*Error or Uncalculated Battery age.*/
-		batt_condition = 0;
-	else if (batt_age >= 80)
-		/*Very Good Condition*/
-		batt_condition = 1;
-	else if (batt_age >= 50)
-		/*Good Condition*/
-		batt_condition = 2;
-	else if (batt_age >= 0)
-		/*Bad Condition*/
-		batt_condition = 3;
-	else
-		/*Uncalculated Battery age.*/
-		batt_condition = 0;
-
-	return batt_condition;
-}
-
-static int get_bat_age(void *data, u64 *val)
-{
-	*val = g_batt_age;
-	return 0;
-}
-
-static int set_bat_age(void *data, u64 val)
-{
-	int bat_age;
-
-	bat_age = (int) val;
-	if (bat_age == -1) {
-		pseudo_batt_age_mode = 0;
-		lge_pm_battery_age_update();
-	} else {
-		pseudo_batt_age_mode = 1;
-		g_batt_age = bat_age;
-	}
-
-	return 0;
-}
-DEFINE_SIMPLE_ATTRIBUTE(bat_age_fops, get_bat_age, set_bat_age, "%llu\n");
-#endif
-
 #define DEFAULT_TEMP		250
 int smb349_get_batt_temp_origin(void)
 {
 #ifdef CONFIG_SENSORS_QPNP_ADC_VOLTAGE
-
 /* LIMIT: Include ONLY A1, B1, Vu3, Z models used MSM8974 AA/AB */
 #ifdef CONFIG_ADC_READY_CHECK_JB
 	int rc = 0;
@@ -1115,17 +945,6 @@ static int get_prop_batt_capacity_bms(struct smb349_struct *smb349_chg)
 #endif
 }
 
-#ifdef CONFIG_MAX17050_FUELGAUGE
-static int get_prop_batt_capacity_max17050(struct smb349_struct *smb349_chg)
-{
-#ifdef CONFIG_MAX17050_FUELGAUGE
-	return max17050_get_battery_capacity_percent();
-#else
-	pr_err("CONFIG_MAX17050_FUELGAUGE is not defined.\n");
-	return DEFAULT_CAPACITY;
-#endif
-}
-#endif
 static int get_prop_batt_capacity_max17048(struct smb349_struct *smb349_chg)
 {
 #ifdef CONFIG_MAX17048_FUELGAUGE
@@ -1235,17 +1054,6 @@ static int get_prop_batt_full_design_bms(struct smb349_struct *smb349_chg)
 #endif
 }
 
-#ifdef CONFIG_MAX17050_FUELGAUGE
-static int get_prop_batt_full_design_max17050(struct smb349_struct *smb349_chg)
-{
-#ifdef CONFIG_MACH_MSM8974_G2_DCM
-	return 3000; /* G2_DCM FULL_DESIGN = 3000mAh */
-#else
-	return DEFAULT_FULL_DESIGN;
-#endif
-}
-#endif
-
 static int get_prop_batt_full_design_max17048(struct smb349_struct *smb349_chg)
 {
 #ifdef CONFIG_MAX17048_FUELGAUGE
@@ -1273,14 +1081,6 @@ static struct gauge_ic_func gauge_ic_func_array[GAUGE_IC_TYPE_MAX] = {
 		.get_prop_batt_fdesign_func
 					= get_prop_batt_full_design_max17048,
 	},
-#ifdef CONFIG_MAX17050_FUELGAUGE
-	{
-		.get_prop_batt_cap_func = get_prop_batt_capacity_max17050,
-		.get_prop_batt_vol_func = get_prop_batt_voltage_now_max17050,
-		.get_prop_batt_fdesign_func
-					= get_prop_batt_full_design_max17050,
-	},
-#endif
 	{
 		.get_prop_batt_cap_func = get_prop_batt_capacity_bms,
 		.get_prop_batt_vol_func = get_prop_batt_voltage_now_bms,
@@ -1305,15 +1105,10 @@ static int smb349_get_prop_batt_status(struct smb349_struct *smb349_chg)
 
 	if (chg_type == POWER_SUPPLY_CHARGE_TYPE_UNKNOWN ||
 		chg_type == POWER_SUPPLY_CHARGE_TYPE_NONE) {
-#ifdef CONFIG_SMB349_VZW_FAST_CHG
-			if ((smb349_chg->usb_present) || (chg_state == VZW_NOT_CHARGING)
-					|| (chg_state == VZW_USB_DRIVER_UNINSTALLED))
-#else
 #if defined(CONFIG_BQ51053B_CHARGER) && defined(CONFIG_WIRELESS_CHARGER)
 			if ((smb349_chg->usb_present) || (smb349_chg->wlc_present))
 #else
 			if (smb349_chg->usb_present)
-#endif
 #endif
 			return POWER_SUPPLY_STATUS_NOT_CHARGING;
 		else
@@ -1381,7 +1176,7 @@ int32_t external_smb349_enable_charging(bool enable)
 	return 0;
 }
 
-#ifdef CONFIG_LGE_PM
+#if defined(CONFIG_MACH_MSM8974_G3_LGU_EVB)
 bool smb349_get_charger_error(struct smb349_struct *smb349_chg)
 {
 	int ret = 0;
@@ -1422,6 +1217,7 @@ bool smb349_get_thermal_regulation_status(struct smb349_struct *smb349_chg)
 		return false;
 }
 
+#if 0
 static void smb349_batt_remove_insert_cb(int batt_present)
 {
 	bool charger = false;
@@ -1481,7 +1277,7 @@ static void smb349_batt_remove_insert_cb(int batt_present)
 	}
 }
 #endif
-
+#endif
 static ssize_t batt_removed_print_name(struct switch_dev *sdev, char *buf){
 	return sprintf(buf, "%s\n","battery_removed");
 }
@@ -1559,11 +1355,7 @@ static ssize_t at_chg_complete_show(struct device *dev,
 		pr_err("called before init\n");
 		return -EINVAL;
 	}
-#if defined(CONFIG_MAX17050_FUELGAUGE)
-	guage_level = max17050_get_soc_for_charging_complete_at_cmd();
-#else
 	guage_level = smb349_get_prop_batt_capacity(the_smb349_chg);
-#endif
 
 	if (guage_level == 100) {
 		r = snprintf(buf, 3, "%d\n", 0);
@@ -1624,7 +1416,7 @@ static ssize_t at_pmic_reset_show(struct device *dev,
 }
 DEVICE_ATTR(at_charge, 0644, at_chg_status_show, at_chg_status_store);
 DEVICE_ATTR(at_chcomp, 0644, at_chg_complete_show, at_chg_complete_store);
-DEVICE_ATTR(at_pmrst, 0640, at_pmic_reset_show, NULL);
+DEVICE_ATTR(at_pmrst, 0644, at_pmic_reset_show, NULL);
 
 /* for dynamically smb349 irq debugging */
 static int smb349_irq_debug;
@@ -1768,12 +1560,8 @@ static void smb349_chg_timeout(bool chg_en)
 		pr_err("Fake batt enter charging timeout, disable charging and locked\n");
 		wake_lock(&the_smb349_chg->chg_timeout_lock);
 	} else {
-#if !defined(CONFIG_MACH_MSM8974_G2_VZW) && !defined(CONFIG_MACH_MSM8974_G2_SPR) \
-	&& !defined(CONFIG_MACH_MSM8974_G2_TMO_US) && !defined(CONFIG_MACH_MSM8974_G2_OPEN_COM) && !defined(CONFIG_MACH_MSM8974_G2_OPT_AU) \
-	&& !defined(CONFIG_MACH_MSM8974_G2_ATT) && !defined(CONFIG_MACH_MSM8974_G2_CA)
 		pr_err("enter charging timeout, disable charging and locked\n");
 		wake_lock(&the_smb349_chg->chg_timeout_lock);
-#endif
 	}
 
 	ret = smb349_enable_charging(the_smb349_chg, chg_en);
@@ -1880,139 +1668,6 @@ static void smb349_change_otg_current_limit(struct smb349_struct *smb349_chg)
 	schedule_delayed_work(&smb349_chg->polling_work, msecs_to_jiffies(500));
 }
 
-#ifdef CONFIG_MAX17050_FUELGAUGE
-static int check_fuel_gauage_update_data(void)
-{
-	int val;
-#if defined(CONFIG_MACH_MSM8974_G2_DCM)
-	if (lge_get_board_revno() > HW_REV_A) {
-		g_batt_vol = max17050_get_battery_mvolts();
-		g_batt_soc = max17050_get_battery_capacity_percent();
-		g_batt_current = max17050_get_battery_current();
-		/* battery age update add */
-	}
-#else
-	{
-		g_batt_vol = max17050_get_battery_mvolts();
-		g_batt_soc = max17050_get_battery_capacity_percent();
-		/* battery age update add */
-		pr_info("check_fuel_gauage_update_data: g_batt_soc(%d), g_batt_vol(%d)\n",
-			g_batt_soc,  g_batt_vol);
-	}
-#endif
-	lge_pm_battery_age_update();
-
-	if ((abs(g_batt_vol - g_batt_pre_vol) >= 50) ||
-			g_batt_soc != g_batt_pre_soc) {
-		g_batt_pre_vol = g_batt_vol;
-		g_batt_pre_soc = g_batt_soc;
-		val = true;
-	} else
-		val = false;
-
-	return val;
-
-}
-#endif
-
-#ifdef CONFIG_MAX17050_FUELGAUGE
-#define HEAVY_SYSTEM_LOAD -1000
-#define TYPICAL_SYSTEM_LOAD -400
-#define MAX17050_SOC_MS    30000
-#define MID_MAX17050_SOC_MS 20000
-#define LOW_MAX17050_SOC_MS	10000
-static void max17050_soc(struct work_struct *work)
-{
-	struct delayed_work *dwork = to_delayed_work(work);
-	struct smb349_struct *chip = container_of(dwork,
-				struct smb349_struct, max17050_soc_work);
-
-#ifdef CONFIG_MAX17050_FUELGAUGE
-	if (check_fuel_gauage_update_data() == true) {
-		pr_info("batt_soc(%d), batt_vol(%d), batt_current(%d), batt_age(%d)\n",
-			g_batt_soc, g_batt_vol, g_batt_current, g_batt_age);
-		power_supply_changed(&chip->batt_psy);
-	}
-#else
-	power_supply_changed(&chip->batt_psy);
-#endif
-
-	if (!smb349_is_charger_present(chip->client)) {
-		if (g_batt_current < HEAVY_SYSTEM_LOAD)
-			schedule_delayed_work(&chip->max17050_soc_work,
-					      msecs_to_jiffies(LOW_MAX17050_SOC_MS));
-		else if (g_batt_current < TYPICAL_SYSTEM_LOAD) {
-			if (g_batt_soc > 5)
-				schedule_delayed_work(&chip->max17050_soc_work,
-					      msecs_to_jiffies(MID_MAX17050_SOC_MS));
-			else
-				schedule_delayed_work(&chip->max17050_soc_work,
-					      msecs_to_jiffies(LOW_MAX17050_SOC_MS));
-		}
-		else {
-			if (g_batt_soc > 15)
-				schedule_delayed_work(&chip->max17050_soc_work,
-					      msecs_to_jiffies(MAX17050_SOC_MS));
-			else if (g_batt_soc > 5)
-				schedule_delayed_work(&chip->max17050_soc_work,
-					      msecs_to_jiffies(MID_MAX17050_SOC_MS));
-			else
-				schedule_delayed_work(&chip->max17050_soc_work,
-					      msecs_to_jiffies(LOW_MAX17050_SOC_MS));
-		}
-	} else {
-		if ( g_batt_current > 1000 )
-			schedule_delayed_work(&chip->max17050_soc_work,
-				      msecs_to_jiffies(LOW_MAX17050_SOC_MS));
-		else
-			schedule_delayed_work(&chip->max17050_soc_work,
-				      msecs_to_jiffies(MID_MAX17050_SOC_MS));
-	}
-
-}
-#endif
-
-#ifdef CONFIG_SMB349_VZW_FAST_CHG
-/*
- * Detect VZW slow charger.
- * If the capacity of chager is under 500mA, that charger is slow.
- * 1. Check the SMB349 'DCIN under-voltage status' five times.
- * 2. Determine the charger is incompatible, if DCIN status bit is changed in ten times.
- */
-static int vzw_fast_chg_detect_slow_charger(struct i2c_client *client)
-{
-	int ret, count = 0, threshold= 4200000, hw_rev = 0;
-
-#ifdef CONFIG_MACH_MSM8974_G2_VZW
-	if(lge_get_board_revno() >= HW_REV_E) {
-		/*for smb349 A4 version*/
-		hw_rev = 1;
-		pr_info("HW_REV : %d\n", lge_get_board_revno());
-	} else {
-		/*for smb349 A6 version*/
-		threshold = 3750000;
-		pr_info("HW_REV : %d\n", lge_get_board_revno());
-	}
-#endif
-
-	do{
-		ret = smb349_get_usbin_adc();
-		if (ret < threshold) {
-			pr_info("slow charger is detected , DCIN : %d\n", ret);
-			if (hw_rev) {
-				chg_state = VZW_UNDER_CURRENT_CHARGING;
-				pr_info("chg_state = %d\n", chg_state);
-			}
-			return 0;
-		}
-		count += 1;
-		msleep(10);
-	}while(count < 5);
-
-	return 1;
-}
-#endif
-
 #if SMB349_BOOSTBACK_WORKAROUND
 #define AICL_INC 1
 #define AICL_DEC 0
@@ -2067,20 +1722,46 @@ static int smb349_aicl_dynamic_switch(struct smb349_struct *smb349_chg, int mode
 	return 0;
 }
 
+static void smb349_dump_register(struct smb349_struct *smb349_chg, char *msg)
+{
+	int i;
+	u8 val;
+
+	pr_info("%s\n", msg);
+	for (i = 0 ; i < ARRAY_SIZE(smb349_debug_regs) ; i++) {
+		smb349_read_reg(smb349_chg->client, smb349_debug_regs[i].reg, &val);
+		pr_err("[DUMP] %s: 0x%02X\n", smb349_debug_regs[i].name, val);
+	}
+}
 #define BB_POLLING_PERIOD HZ
 #define DISCHARGE_CURRENT 50
 static void smb349_bb_worker(struct work_struct *work)
 {
 	struct smb349_struct *smb349_chg =
 		container_of(work, struct smb349_struct, bb_work.work);
+
+	static int irq_chk_delay = 0;
+	static unsigned long prev_irq_cnt = 0;
+	static bool one_shot_dump = true;
+
 	int chg_current;
 	int ret;
 
 	chg_current = smb349_get_prop_batt_current_now(smb349_chg);
 	smb349_console_silent = 0;
 
+	if (smb349_chg->irq_trigger_cnt > (ULONG_MAX - 100)) {
+		smb349_chg->irq_trigger_cnt = 1;
+	}
+
 	if (chg_current < DISCHARGE_CURRENT * 1000) {
 		pr_debug("discharging case\n");
+		if (!irq_chk_delay) {
+			prev_irq_cnt = smb349_chg->irq_trigger_cnt;
+		}
+		irq_chk_delay++;
+		irq_chk_delay = irq_chk_delay % 2;
+
 		smb349_console_silent = 1;
 		ret = smb349_aicl_dynamic_switch(smb349_chg, AICL_INC);
 		if (ret) {
@@ -2090,6 +1771,28 @@ static void smb349_bb_worker(struct work_struct *work)
 
 		msleep(20);
 
+		if (smb349_chg->irq_trigger_cnt == 0 || (!irq_chk_delay
+			&& prev_irq_cnt == smb349_chg->irq_trigger_cnt)) {
+			if (!smb349_is_charger_present_rt(smb349_chg->client)) {
+				pr_err("!!!ERROR FATAL smb349 doesn't occur IRQ prev_cnt:%lu, irq_cnt:%lu unplugged\n",
+					prev_irq_cnt, smb349_chg->irq_trigger_cnt);
+				smb349_console_silent = 0;
+				smb349_dump_register(smb349_chg, "unplugged case before call irq_worker");
+				schedule_delayed_work(&smb349_chg->irq_work, 0);
+				smb349_dump_register(smb349_chg, "unplugged case after call irq_worker");
+				pr_err("stat gpio value : %d\n", gpio_get_value(smb349_chg->stat_gpio));
+				smb349_pmic_reg_dump();
+			} else {
+				if (one_shot_dump) {
+					pr_err("!!!ERROR FATAL smb349 doesn't occur IRQ prev_cnt:%lu, irq_cnt:%lu plugged\n",
+						prev_irq_cnt, smb349_chg->irq_trigger_cnt);
+					smb349_dump_register(smb349_chg, "plugged case");
+					pr_err("stat gpio value : %d\n", gpio_get_value(smb349_chg->stat_gpio));
+					smb349_pmic_reg_dump();
+					one_shot_dump = false;
+				}
+			}
+		}
 
 		ret = smb349_aicl_dynamic_switch(smb349_chg, AICL_DEC);
 		if (ret) {
@@ -2499,33 +2202,14 @@ static irqreturn_t smb349_irq(int irq, void *dev_id)
 
 	pr_debug("smb349_irq\n");
 
-#if I2C_SUSPEND_WORKAROUND
-	/* I2C transfers API should not run in interrupt context */
-	schedule_delayed_work(&smb349_chg->check_suspended_work, msecs_to_jiffies(100));
-#else
-	schedule_delayed_work(&smb349_chg->irq_work, msecs_to_jiffies(100));
+#if SMB349_BOOSTBACK_WORKAROUND
+	smb349_chg->irq_trigger_cnt++;
 #endif
+	/* I2C transfers API should not run in interrupt context */
+	schedule_delayed_work(&smb349_chg->irq_work, msecs_to_jiffies(100));
+
 	return IRQ_HANDLED;
 }
-
-#if I2C_SUSPEND_WORKAROUND
-static void smb349_check_suspended_worker(struct work_struct *work)
-{
-        struct smb349_struct *smb349_chg =
-                container_of(work, struct smb349_struct, check_suspended_work.work);
-
-        if (smb349_chg->suspended && i2c_suspended)
-	{
-		printk("smb349 suspended. try i2c operation after 100ms.\n");
-		schedule_delayed_work(&smb349_chg->check_suspended_work, msecs_to_jiffies(100));
-	}
-	else
-	{
-		pr_debug("smb349 resumed. do smb349_irq.\n");
-		schedule_delayed_work(&smb349_chg->irq_work, 0);
-	}
-}
-#endif //I2C_SUSPEND_WORKAROUND
 
 static void smb349_polling_worker(struct work_struct *work)
 {
@@ -2540,8 +2224,6 @@ static enum power_supply_property pm_power_props[] = {
 	POWER_SUPPLY_PROP_ONLINE,
 	POWER_SUPPLY_PROP_CURRENT_MAX,
 	POWER_SUPPLY_PROP_CHARGE_TYPE,
-	POWER_SUPPLY_PROP_CHARGING_COMPLETE,
-	POWER_SUPPLY_PROP_SAFTETY_CHARGER_TIMER,
 };
 
 static enum power_supply_property smb349_batt_power_props[] = {
@@ -2560,13 +2242,6 @@ static enum power_supply_property smb349_batt_power_props[] = {
 	POWER_SUPPLY_PROP_TEMP,
 	POWER_SUPPLY_PROP_PSEUDO_BATT,
 	POWER_SUPPLY_PROP_EXT_PWR_CHECK,
-#ifdef CONFIG_MAX17050_FUELGAUGE
-	POWER_SUPPLY_PROP_BATTERY_CONDITION,
-	POWER_SUPPLY_PROP_BATTERY_AGE,
-#endif
-#ifdef CONFIG_SMB349_VZW_FAST_CHG
-	POWER_SUPPLY_PROP_VZW_CHG,
-#endif
 #if defined(CONFIG_LGE_PM_BATTERY_ID_CHECKER)
 	POWER_SUPPLY_PROP_BATTERY_ID_CHECKER,
 #endif
@@ -2593,34 +2268,10 @@ static int pm_power_get_property(struct power_supply *psy,
 		val->intval = smb349_chg->chg_current_ma;
 		break;
 	case POWER_SUPPLY_PROP_ONLINE:
-#ifdef CONFIG_SMB349_VZW_FAST_CHG
-		if (chg_state == VZW_NOT_CHARGING)
-			val->intval = 1;
-		else
-#endif
 		val->intval = smb349_chg->ac_online;
 		break;
 	case POWER_SUPPLY_PROP_CHARGE_TYPE:
 		val->intval = smb349_get_prop_charge_type(smb349_chg);
-		break;
-	case POWER_SUPPLY_PROP_SAFTETY_CHARGER_TIMER:
-	{
-		int ret;
-		u8 value = 0;
-		ret = smb349_read_reg(smb349_chg->client, STAT_TIMER_REG, &value);
-		if (ret) {
-			pr_err("failed to read STATUS_IRQ_REG ret=%d\n", ret);
-			return -EINVAL;
-		}
-		val->intval = ((value & COMPETE_CHG_TIMEOUT_BIT) == 0xc) ? false : true;
-		pr_info("get charger_timeout : %d[D]\n", val->intval);
-	}
-		break;
-	case POWER_SUPPLY_PROP_CHARGING_COMPLETE:
-		if (smb349_get_prop_batt_capacity(smb349_chg) == 100)
-			val->intval = 0;
-		else
-			val->intval = 1;
 		break;
 	default:
 		return -EINVAL;
@@ -2693,25 +2344,13 @@ static int smb349_chg_timeout_set(struct smb349_struct *smb349_chg)
 		return ret;
 	}
 
-	return 0;
-}
-
-static int smb349_chg_timer_set(struct smb349_struct *smb349_chg, bool enable)
-{
-	int ret;
-
-	pr_info("enable=%d\n", enable);
-
 	/* set Charge timeout bit */
-	if (!enable) {
-		ret = smb349_masked_write(smb349_chg->client, STAT_TIMER_REG,
-					COMPETE_CHG_TIMEOUT_BIT, 0xc);
-		if (ret) {
-			pr_err("Failed to set COMPETE_CHG_TIMEOUT_BIT rc=%d\n", ret);
-			return ret;
-		}
-	} else
-		smb349_chg_timeout_set(smb349_chg);
+	ret = smb349_masked_write(smb349_chg->client, STATUS_IRQ_REG,
+				CHG_TIMEOUT_BIT, 0x80);
+	if (ret) {
+		pr_err("Failed to set CHG_TIMEOUT_BIT rc=%d\n", ret);
+		return ret;
+	}
 
 	smb349_chg->chg_timeout = false;
 
@@ -3010,34 +2649,6 @@ static int smb349_hwinit(struct smb349_struct *smb349_chg)
 		return ret;
 	}
 
-#ifdef CONFIG_VZW_LLK
-	ret = smb349_masked_write(smb349_chg->client, CHG_CTRL_REG,
-				BIT(7), BIT(7));
-	if (ret) {
-		pr_err("Failed to set CURR_TERM_END_CHG_BIT rc=%d\n", ret);
-		return ret;
-	}
-#endif
-
-#ifdef CONFIG_MACH_MSM8974_G2_VZW
-	if (lge_get_battery_low()){
-		ret = smb349_masked_write(smb349_chg->client, CMD_B_REG,
-				USB_HC_MODE_BIT, USB_HC_MODE_BIT);
-		if (ret) {
-			pr_err("Failed to set USB_HC_MODE_BIT rc=%d\n", ret);
-			return ret;
-		}
-
-		ret = smb349_masked_write(smb349_chg->client, CMD_A_REG,
-				CHG_ENABLE_BIT, 0x00);
-		if (ret) {
-			pr_err("Failed to set CHG_ENABLE_BIT rc=%d\n", ret);
-			return ret;
-		}
-		pr_info("Trickle boot : set usb_hc_mode and charging is disabled\n");
-	}
-#endif
-
 	ret = smb349_chg_current_set(smb349_chg, smb349_chg->chg_current_ma);
 	if (ret) {
 		pr_err("Failed to set FAST_CHG_CURRENT rc=%d\n", ret);
@@ -3047,12 +2658,6 @@ static int smb349_hwinit(struct smb349_struct *smb349_chg)
 	ret = smb349_term_current_set(smb349_chg);
 	if (ret) {
 		pr_err("Failed to set TERM_CURRENT rc=%d\n", ret);
-		return ret;
-	}
-
-	ret = smb349_chg_timer_set(smb349_chg, 1);
-	if (ret) {
-		pr_err("failed to enable chg safety timer\n");
 		return ret;
 	}
 
@@ -3333,14 +2938,7 @@ smb349_set_pre_chg_current(struct smb349_struct *smb349_chg, int pchg_ma)
 			PRE_CHG_CURRENT_MASK, temp);
 }
 
-#if defined(CONFIG_MACH_MSM8974_G2_ATT) || defined(CONFIG_MACH_MSM8974_G2_SPR) || \
-	defined(CONFIG_MACH_MSM8974_G2_VZW) || defined(CONFIG_MACH_MSM8974_G2_TMO_US) || \
-	defined(CONFIG_MACH_MSM8974_G2_TEL_AU) || defined(CONFIG_MACH_MSM8974_G2_OPEN_COM) || \
-	defined(CONFIG_MACH_MSM8974_G2_OPT_AU) || defined(CONFIG_MACH_MSM8974_G2_CA)
-#define HC_INPUT_CURR_LIMIT_DEFAULT 2000
-#else
 #define HC_INPUT_CURR_LIMIT_DEFAULT 3000
-#endif
 #define HC_INPUT_CURR_LIMIT_FACTORY 1500
 #define HC_INPUT_CURR_LIMIT_FACTORY_130K 1000
 
@@ -3396,140 +2994,6 @@ static int smb349_switch_usb_to_host_mode(struct smb349_struct *smb349_chg)
 	return 0;
 }
 
-#ifdef CONFIG_VZW_LLK
-int32_t vzw_llk_smb349_enable_charging(bool enable)
-{
-	int ret ;
-	struct smb349_struct *smb349_chg = the_smb349_chg;
-
-	pr_debug("enable=%d.\n", enable);
-
-	ret = smb349_enable_charging(the_smb349_chg, enable);
-
-	if (ret) {
-		pr_err("Failed to set CHG_ENABLE_BIT rc=%d\n", ret);
-		return ret;
-	}
-
-	if (!enable && !(chg_state == VZW_LLK_NOT_CHARGING)) {
-		temp_state = chg_state;
-		chg_state = VZW_LLK_NOT_CHARGING;
-		pr_info("CHG_STATE : %d\n", chg_state);
-	} else if ((chg_state == VZW_LLK_NOT_CHARGING) && enable){
-		chg_state = temp_state;
-		pr_info("CHG_STATE : %d\n", chg_state);
-	}
-
-	power_supply_changed(&smb349_chg->batt_psy);
-
-	return 0;
-}
-#endif
-
-#ifdef CONFIG_SMB349_VZW_FAST_CHG
-static int smb349_suspend_enable(struct smb349_struct *smb349_chg, bool enable);
-static void vzw_fast_chg_change_usb_charging_state(struct smb349_struct *smb349_chg)
-{
-	struct usb_phy *otg_xceiv;
-	struct dwc3_otg *dotg;
-
-	otg_xceiv = usb_get_transceiver();
-	if (!otg_xceiv) {
-		pr_err("Failed to get usb transceiver.\n");
-		return;
-	}
-
-	dotg = container_of(otg_xceiv->otg, struct dwc3_otg, otg);
-	if (!dotg) {
-		pr_err("Failed to get otg driver data.\n");
-		return;
-	}
-
-	if (dotg->charger->chg_type == DWC3_CDP_CHARGER) {
-		smb349_set_usb_5_1_mode(smb349_chg, 1);
-		smb349_usb_hc_mode(smb349_chg, USB_HC_MODE_BIT);
-		pr_info("CDP CHARGER is connected!\n");
-	} else if(!slimport_is_connected()) {
-		if (smb349_chg->usb_psy->is_usb_driver_uninstall) {
-			chg_state = VZW_USB_DRIVER_UNINSTALLED;
-			pr_info("VZW usb driver uninstall detected!!\n");
-		}
-
-		if (smb349_chg->usb_psy->is_floated_charger) {
-			smb349_set_usb_5_1_mode(smb349_chg, 0);
-			smb349_enable_charging(smb349_chg, false);
-			smb349_suspend_enable(smb349_chg, true);
-			chg_state = VZW_NOT_CHARGING;
-			pr_info("%s : OPEN TA is connected!!", __func__);
-		} else if (usb_chg_state == IS_USB_DRIVER_INSTALLED) {
-			smb349_set_usb_5_1_mode(smb349_chg, 1);
-			smb349_enable_charging(smb349_chg, true);
-			pr_info("USB is configured and USB Driver is installed!\n");
-			chg_state = VZW_NORMAL_CHARGING;
-			usb_chg_state = IS_USB_CHARGING_ENABLE;
-#if SMB349_BOOSTBACK_WORKAROUND
-			if (smb349_chg->is_bb_work_case)
-				smb349_usb_hc_mode(smb349_chg, USB_HC_MODE_BIT);
-			else
-				smb349_usb_hc_mode(smb349_chg, 0);
-#else
-			smb349_usb_hc_mode(smb349_chg, 0);
-#endif
-		}
-	} else {
-		chg_state = VZW_NORMAL_CHARGING;
-#if SMB349_BOOSTBACK_WORKAROUND
-		if (smb349_chg->is_bb_work_case)
-			smb349_usb_hc_mode(smb349_chg, USB_HC_MODE_BIT);
-		else
-			smb349_usb_hc_mode(smb349_chg, 0);
-#else
-		smb349_usb_hc_mode(smb349_chg, 0);
-#endif
-	}
-}
-
-static void
-smb349_force_fast_to_pre_chg(struct smb349_struct *smb349_chg, int chg_current);
-
-static void vzw_fast_chg_set_charging(struct smb349_struct *smb349_chg)
-{
-	/*Changed SMB349 Charger setting,
-	 if unknown slow charger is detected. */
-	int ret;
-
-	if (vzw_chg_present == NOT_PRESENT) {
-		smb349_set_usb_5_1_mode(smb349_chg, 1);
-		if (!vzw_fast_chg_detect_slow_charger(smb349_chg->client)) {
-			/* decrease charing current 100mA, if slow TA is detected */
-
-			ret = smb349_masked_write(smb349_chg->client, CHG_CURRENT_REG,
-								0x0F, 0x00); /* 500mA */
-			if (ret) {
-				pr_err("Failed to set CHG_ENABLE_BIT rc=%d\n", ret);
-				return ;
-			}
-
-			vzw_chg_present = SLOW_PRESENT;
-			pr_info("slow TA, decrease charging current.\n");
-		} else {
-			smb349_usb_hc_mode(smb349_chg, USB_HC_MODE_BIT);
-			vzw_chg_present = UNKNOWN_PRESENT;
-		}
-	} else if (vzw_chg_present == SLOW_PRESENT){
-		smb349_force_fast_to_pre_chg(smb349_chg, 200);
-		smb349_usb_hc_mode(smb349_chg, USB_HC_MODE_BIT);
-		chg_state = VZW_UNDER_CURRENT_CHARGING;
-		pr_info("chg_state 1 = %d\n", chg_state);
-
-	} else {
-		smb349_usb_hc_mode(smb349_chg, USB_HC_MODE_BIT);
-		chg_state = VZW_NORMAL_CHARGING;
-		pr_info("chg_state 2 = %d\n", chg_state);
-	}
-}
-#endif
-
 static void smb349_batt_external_power_changed(struct power_supply *psy)
 {
 	struct smb349_struct *smb349_chg = container_of(psy,
@@ -3545,13 +3009,8 @@ static void smb349_batt_external_power_changed(struct power_supply *psy)
 		if ((ret.intval == POWER_SUPPLY_SCOPE_SYSTEM)
 				&& !smb349_chg_is_otg_active(smb349_chg)) {
 			smb349_switch_usb_to_host_mode(smb349_chg);
-#if defined(CONFIG_MACH_MSM8974_G2_KR) || defined(CONFIG_MACH_MSM8974_VU3_KR) || \
-	defined(CONFIG_MACH_MSM8974_TIGERS)
-#if defined(CONFIG_MACH_MSM8974_G2_KR) || defined(CONFIG_MACH_MSM8974_TIGERS)
+#if defined(CONFIG_MACH_MSM8974_G3_LGU_EVB) || defined(CONFIG_MACH_MSM8974_G2_KR)
 			if(lge_get_board_revno() >= HW_REV_C)
-#elif defined(CONFIG_MACH_MSM8974_VU3_KR)
-			if(lge_get_board_revno() >= HW_REV_EVB2)
-#endif
 			{
 				gpio_set_value(smb349_chg->otg_en_gpio, 1);
 			}
@@ -3562,13 +3021,8 @@ static void smb349_batt_external_power_changed(struct power_supply *psy)
 		if ((ret.intval == POWER_SUPPLY_SCOPE_DEVICE)
 				&& smb349_chg_is_otg_active(smb349_chg)) {
 			smb349_switch_usb_to_charge_mode(smb349_chg);
-#if defined(CONFIG_MACH_MSM8974_G2_KR) || defined(CONFIG_MACH_MSM8974_VU3_KR) || \
-	defined(CONFIG_MACH_MSM8974_TIGERS)
-#if defined(CONFIG_MACH_MSM8974_G2_KR) || defined(CONFIG_MACH_MSM8974_TIGERS)
+#if defined(CONFIG_MACH_MSM8974_G3_LGU_EVB) || defined(CONFIG_MACH_MSM8974_G2_KR)
 			if(lge_get_board_revno() >= HW_REV_C)
-#elif defined(CONFIG_MACH_MSM8974_VU3_KR)
-			if(lge_get_board_revno() >= HW_REV_EVB2)
-#endif
 			{
 				gpio_set_value(smb349_chg->otg_en_gpio, 0);
 			}
@@ -3582,9 +3036,6 @@ static void smb349_batt_external_power_changed(struct power_supply *psy)
 	smb349_chg->usb_online = ret.intval;
 
 	if (is_factory_cable() && smb349_is_charger_present(smb349_chg->client)) {
-#ifdef CONFIG_SMB349_VZW_FAST_CHG
-		chg_state = VZW_NORMAL_CHARGING;
-#endif
 		if (is_factory_cable_130k()) {
 			pr_info("Factory cable 130k detected, operate USB2.0 mode\n");
 			smb349_set_usb_2_3_mode(smb349_chg, false);
@@ -3605,9 +3056,6 @@ static void smb349_batt_external_power_changed(struct power_supply *psy)
 				PRE_CHG_TO_FAST_CHG_THRESH_BIT);
 			smb349_set_fast_charge(smb349_chg, 0);
 			smb349_usb_hc_mode(smb349_chg, USB_HC_MODE_BIT);
-#ifdef CONFIG_LGE_G2_EMBEDDED_BATT
-			smb349_enable_charging(smb349_chg, false);
-#endif
 #ifndef CONFIG_LGE_PM
 			smb349_chg_usb_suspend_enable(smb349_chg, 0);
 #endif
@@ -3618,14 +3066,6 @@ static void smb349_batt_external_power_changed(struct power_supply *psy)
 			smb349_pmic_usb_override_wrap(smb349_chg, true);
 
 		smb349_set_usb_2_3_mode(smb349_chg, false);
-#ifdef CONFIG_SMB349_VZW_FAST_CHG
-		vzw_chg_present = USB_PRESENT;
-		if ((usb_chg_state != IS_USB_CHARGING_ENABLE) && (usb_chg_state != IS_OPEN_TA)){
-			smb349_set_usb_5_1_mode(smb349_chg, 0);
-			vzw_fast_chg_change_usb_charging_state(smb349_chg);
-		}
-		pr_info("VZW_CHG_PRESENT = USB_PRESENT\n");
-#else
 #if SMB349_BOOSTBACK_WORKAROUND
 		if (smb349_chg->is_bb_work_case)
 			smb349_usb_hc_mode(smb349_chg, USB_HC_MODE_BIT);
@@ -3633,15 +3073,6 @@ static void smb349_batt_external_power_changed(struct power_supply *psy)
 			smb349_usb_hc_mode(smb349_chg, 0);
 #else
 		smb349_usb_hc_mode(smb349_chg, 0);
-#endif
-#endif
-#ifdef CONFIG_VZW_LLK
-		if (get_prop_batt_capacity_max17048(smb349_chg) > 34) {
-			smb349_enable_charging(smb349_chg, false);
-			temp_state = chg_state;
-			chg_state = VZW_LLK_NOT_CHARGING;
-			pr_info("VZW LLK Charging Stop!!, CHG_STATE : %d\n", chg_state);
-		}
 #endif
 		/* ToDo : Must implements & verify. */
 #ifndef CONFIG_LGE_PM
@@ -3654,24 +3085,11 @@ static void smb349_batt_external_power_changed(struct power_supply *psy)
 #endif
 	} else if (smb349_chg->ac_online &&
 				smb349_is_charger_present(smb349_chg->client)) {
-#ifdef CONFIG_SMB349_VZW_FAST_CHG
-		vzw_fast_chg_set_charging(smb349_chg);
-#else
 		smb349_usb_hc_mode(smb349_chg, USB_HC_MODE_BIT);
 		/* ToDo : Must implements & verify. */
-#endif
 		if (smb349_chg->is_phy_forced_on)
 			smb349_pmic_usb_override_wrap(smb349_chg, false);
 
-#ifdef CONFIG_VZW_LLK
-		if (((chg_state == 1) || (chg_state == 3)) &&
-				(get_prop_batt_capacity_max17048(smb349_chg) > 34)) {
-			smb349_enable_charging(smb349_chg, false);
-			temp_state = chg_state;
-			chg_state = VZW_LLK_NOT_CHARGING;
-			pr_info("VZW LLK Charging Stop!!, CHG_STATE : %d\n", chg_state);
-		}
-#endif
 #ifndef CONFIG_LGE_PM
 		if ((smb349_chg->current_max / 1000) <=
 			SMB349_CHG_IUSB_MAX_MIN_MA)
@@ -3704,17 +3122,6 @@ static void smb349_batt_external_power_changed(struct power_supply *psy)
 #endif
 	} else {
 		smb349_chg->chg_timeout = false;
-#ifdef CONFIG_SMB349_VZW_FAST_CHG
-		if(!smb349_is_charger_present(smb349_chg->client)){
-			smb349_suspend_enable(smb349_chg, false);
-			usb_chg_state = IS_USB_DRIVER_INSTALLED;
-		}
-		chg_state = VZW_NO_CHARGER;
-		vzw_chg_present = NOT_PRESENT;
-#ifdef CONFIG_VZW_LLK
-		temp_state = 0;
-#endif
-#endif
 #ifdef CONFIG_LGE_THERMALE_CHG_CONTROL
 		smb349_chg_current_set(smb349_chg, smb349_chg->chg_current_ma);
 #endif
@@ -3775,7 +3182,7 @@ static int smb349_batt_power_get_property(struct power_supply *psy,
 		val->intval = smb349_get_prop_batt_present(smb349_chg);
 		break;
 	case POWER_SUPPLY_PROP_TECHNOLOGY:
-#if defined(CONFIG_MACH_MSM8974_G2_KR) || defined(CONFIG_MACH_MSM8974_VU3_KR) || defined(CONFIG_MACH_MSM8974_TIGERS)
+#if defined(CONFIG_MACH_MSM8974_G3_LGU_EVB) || defined(CONFIG_MACH_MSM8974_G2_KR)
 		val->intval = POWER_SUPPLY_TECHNOLOGY_LION;
 #else
 		val->intval = POWER_SUPPLY_TECHNOLOGY_LIPO;
@@ -3837,19 +3244,6 @@ static int smb349_batt_power_get_property(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_EXT_PWR_CHECK:
 		val->intval = lge_pm_get_cable_type();
 		break;
-#ifdef CONFIG_MAX17050_FUELGAUGE
-	case POWER_SUPPLY_PROP_BATTERY_CONDITION:
-		val->intval = lge_pm_get_battery_condition();
-		break;
-	case POWER_SUPPLY_PROP_BATTERY_AGE:
-		val->intval = lge_pm_get_battery_age();
-		break;
-#endif
-#ifdef CONFIG_SMB349_VZW_FAST_CHG
-	case POWER_SUPPLY_PROP_VZW_CHG:
-		val->intval = chg_state;
-		break;
-#endif
 #if defined(CONFIG_LGE_PM_BATTERY_ID_CHECKER)
 	case POWER_SUPPLY_PROP_BATTERY_ID_CHECKER:
 		if (!smb349_chg)
@@ -4008,10 +3402,6 @@ static int pm_power_set_property(struct power_supply *psy,
 		/* SMB329 does not use cable detect current */
 		//smb349_chg->chg_current_ma = val->intval;
 		break;
-	case POWER_SUPPLY_PROP_SAFTETY_CHARGER_TIMER:
-		smb349_chg_timer_set(smb349_chg, ((val->intval == 0) ? false : true));
-		pr_info("charger_timeout : %d[D]\n", val->intval);
-		break;
 	default:
 		return -EINVAL;
 	}
@@ -4027,7 +3417,6 @@ smb349_pm_power_property_is_writeable(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_PRESENT:
 	case POWER_SUPPLY_PROP_ONLINE:
 	case POWER_SUPPLY_PROP_CURRENT_MAX:
-	case POWER_SUPPLY_PROP_SAFTETY_CHARGER_TIMER:
 		return 1;
 	default:
 		break;
@@ -4169,10 +3558,6 @@ static void smb349_monitor_batt_temp(struct work_struct *work)
 
 			wake_unlock(&smb349_chg->chg_timeout_lock);
 		} else {
-#if !defined(CONFIG_MACH_MSM8974_G2_VZW) && !defined(CONFIG_MACH_MSM8974_G2_SPR) \
-	&& !defined(CONFIG_MACH_MSM8974_G2_TMO_US) && !defined(CONFIG_MACH_MSM8974_G2_OPEN_COM) \
-	&& !defined(CONFIG_MACH_MSM8974_G2_OPT_AU) && !defined(CONFIG_MACH_MSM8974_G2_ATT) \
-	&& !defined(CONFIG_MACH_MSM8974_G2_CA)
 			pr_err("escape charging timeout, charging enable and unlocked\n");
 
 			smb349_chg->chg_timeout = false;
@@ -4182,7 +3567,6 @@ static void smb349_monitor_batt_temp(struct work_struct *work)
 				pr_err("Failed to set CHG_ENABLE_BIT rc=%d\n", ret);
 
 			wake_unlock(&smb349_chg->chg_timeout_lock);
-#endif
 		}
 	}
 
@@ -4266,10 +3650,7 @@ static void smb349_monitor_batt_temp(struct work_struct *work)
 			}
 		}
 #endif
-	}
 
-	if (smb349_chg->pseudo_ui_chg ^ res.pseudo_chg_ui) {
-		is_changed = true;
 		smb349_chg->pseudo_ui_chg = res.pseudo_chg_ui;
 	}
 
@@ -4419,13 +3800,8 @@ static int __devinit smb349_probe(struct i2c_client *client,
 			return smb349_chg->stat_gpio;
 		}
 
-#if defined(CONFIG_MACH_MSM8974_G2_KR) || defined(CONFIG_MACH_MSM8974_VU3_KR) || \
-	defined(CONFIG_MACH_MSM8974_TIGERS)
-#if defined(CONFIG_MACH_MSM8974_G2_KR) || defined(CONFIG_MACH_MSM8974_TIGERS)
+#if defined(CONFIG_MACH_MSM8974_G3_LGU_EVB) || defined(CONFIG_MACH_MSM8974_G2_KR)
 		if(lge_get_board_revno() >= HW_REV_C)
-#elif defined(CONFIG_MACH_MSM8974_VU3_KR)
-		if(lge_get_board_revno() >= HW_REV_EVB2)
-#endif
 		{
 			smb349_chg->otg_en_gpio =
 				of_get_named_gpio(dev_node, "summit,otg-en-gpio", 0);
@@ -4501,8 +3877,7 @@ static int __devinit smb349_probe(struct i2c_client *client,
 		}
 
 		smb349_chg->stat_gpio = pdata->stat_gpio;
-#if defined(CONFIG_MACH_MSM8974_G2_KR) || defined(CONFIG_MACH_MSM8974_VU3_KR) || \
-	defined(CONFIG_MACH_MSM8974_TIGERS)
+#if defined(CONFIG_MACH_MSM8974_G3_LGU_EVB) || defined(CONFIG_MACH_MSM8974_G2_KR)
 		smb349_chg->otg_en_gpio = pdata->otg_en_gpio;
 #endif
 #ifndef CONFIG_LGE_PM
@@ -4522,13 +3897,8 @@ static int __devinit smb349_probe(struct i2c_client *client,
 	smb349_chg->irq = gpio_to_irq(smb349_chg->stat_gpio);
 	pr_debug("stat_gpio irq#=%d.\n", smb349_chg->irq);
 
-#if defined(CONFIG_MACH_MSM8974_G2_KR) || defined(CONFIG_MACH_MSM8974_VU3_KR) || \
-	defined(CONFIG_MACH_MSM8974_TIGERS)
-#if defined(CONFIG_MACH_MSM8974_G2_KR) || defined(CONFIG_MACH_MSM8974_TIGERS)
+#if defined(CONFIG_MACH_MSM8974_G3_LGU_EVB) || defined(CONFIG_MACH_MSM8974_G2_KR)
 	if(lge_get_board_revno() >= HW_REV_C)
-#elif defined(CONFIG_MACH_MSM8974_VU3_KR)
-	if(lge_get_board_revno() >= HW_REV_EVB2)
-#endif
 	{
 		ret = gpio_request(smb349_chg->otg_en_gpio, "otg_en");
 		if (ret) {
@@ -4598,7 +3968,7 @@ static int __devinit smb349_probe(struct i2c_client *client,
 	wake_lock_init(&smb349_chg->lcs_wake_lock,
 				WAKE_LOCK_SUSPEND, "LGE charging scenario");
 #endif
-#ifdef CONFIG_LGE_PM
+#if 0 && defined(CONFIG_MACH_MSM8974_G3_LGU_EVB)
 	wake_lock_init(&smb349_chg->battgone_wake_lock,
 		       WAKE_LOCK_SUSPEND, "batt removed");
 #endif
@@ -4606,34 +3976,7 @@ static int __devinit smb349_probe(struct i2c_client *client,
 	wake_lock_init(&smb349_chg->chg_timeout_lock,
 		       WAKE_LOCK_SUSPEND, "chg timeout");
 
-#if defined(CONFIG_MACH_MSM8974_G2_DCM)
-	if (HW_REV_A < lge_get_board_revno()) {
-		smb349_get_prop_batt_capacity
-			= gauge_ic_func_array[MAX17050_TYPE]
-						.get_prop_batt_cap_func;
-		smb349_get_prop_batt_voltage_now
-			= gauge_ic_func_array[MAX17050_TYPE]
-						.get_prop_batt_vol_func;
-		smb349_get_prop_batt_full_design
-			= gauge_ic_func_array[MAX17050_TYPE]
-						.get_prop_batt_fdesign_func;
-	} else {
-		smb349_get_prop_batt_capacity
-			= gauge_ic_func_array[MAX17048_TYPE]
-						.get_prop_batt_cap_func;
-		smb349_get_prop_batt_voltage_now
-			= gauge_ic_func_array[MAX17048_TYPE]
-						.get_prop_batt_vol_func;
-		smb349_get_prop_batt_full_design
-			= gauge_ic_func_array[MAX17048_TYPE]
-						.get_prop_batt_fdesign_func;
-	}
-#else
-#if defined(CONFIG_MACH_MSM8974_VU3_KR)
-	if (HW_REV_EVB2<= lge_get_board_revno())
-#else
 	if (HW_REV_A <= lge_get_board_revno())
-#endif
 	{
 		smb349_get_prop_batt_capacity
 			= gauge_ic_func_array[MAX17048_TYPE]
@@ -4655,7 +3998,6 @@ static int __devinit smb349_probe(struct i2c_client *client,
 			= gauge_ic_func_array[BMS_TYPE]
 						.get_prop_batt_fdesign_func;
 	}
-#endif
 
 	smb349_chg->batt_removed.name = "battery_removed";
 	smb349_chg->batt_removed.state = 0; /*if batt is removed, state will be set to 1 */
@@ -4717,9 +4059,6 @@ static int __devinit smb349_probe(struct i2c_client *client,
 				HC_INPUT_CURR_LIMIT_FACTORY);
 			smb349_set_fast_charge(smb349_chg, 0);
 			smb349_usb_hc_mode(smb349_chg, USB_HC_MODE_BIT);
-#ifdef CONFIG_LGE_G2_EMBEDDED_BATT
-			smb349_enable_charging(smb349_chg, false);
-#endif
 		}
 	}
 
@@ -4731,22 +4070,12 @@ static int __devinit smb349_probe(struct i2c_client *client,
 
 	INIT_DELAYED_WORK(&smb349_chg->irq_work, smb349_irq_worker);
 	INIT_DELAYED_WORK(&smb349_chg->polling_work, smb349_polling_worker);
-#if I2C_SUSPEND_WORKAROUND
-	INIT_DELAYED_WORK(&smb349_chg->check_suspended_work, smb349_check_suspended_worker);
-#endif //I2C_SUSPEND_WORKAROUND
 #ifdef CONFIG_LGE_CHARGER_TEMP_SCENARIO
 	INIT_DELAYED_WORK(&smb349_chg->battemp_work, smb349_monitor_batt_temp);
 #endif
 #if SMB349_BOOSTBACK_WORKAROUND
 	INIT_DELAYED_WORK(&smb349_chg->bb_work, smb349_bb_worker);
 	INIT_DELAYED_WORK(&smb349_chg->bb_rechg_work, smb349_bb_rechg_worker);
-#endif
-#ifdef CONFIG_MAX17050_FUELGAUGE
-#if defined(CONFIG_MACH_MSM8974_G2_DCM)
-		if (HW_REV_A < lge_get_board_revno())
-			INIT_DELAYED_WORK(&smb349_chg->max17050_soc_work,
-				max17050_soc);
-#endif
 #endif
 
 	ret = request_irq(smb349_chg->irq, smb349_irq, irq_flags,
@@ -4790,19 +4119,12 @@ static int __devinit smb349_probe(struct i2c_client *client,
 	batt_temp_old= DEFAULT_TEMP;
 	batt_current_old = DEFAULT_CURRENT;
 #endif
-#ifdef CONFIG_MAX17050_FUELGAUGE
-#if defined(CONFIG_MACH_MSM8974_G2_DCM)
-		if (HW_REV_A < lge_get_board_revno())
-			schedule_delayed_work(&smb349_chg->max17050_soc_work,
-				msecs_to_jiffies(3000));
-#endif
-#endif
 
 #ifdef CONFIG_LGE_CHARGER_TEMP_SCENARIO
 	schedule_delayed_work(&smb349_chg->battemp_work,
 		MONITOR_BATTEMP_POLLING_PERIOD / 3);
 #endif
-#ifdef CONFIG_LGE_PM
+#if 0 && defined(CONFIG_MACH_MSM8974_G3_LGU_EVB)
 	qpnp_batif_regist_batt_present(&smb349_batt_remove_insert_cb);
 #endif
 	pr_info("OK to probe SMB349.\n");
@@ -4825,7 +4147,7 @@ reg_batt_psy_fail:
 #ifdef CONFIG_LGE_CHARGER_TEMP_SCENARIO
 	wake_lock_destroy(&smb349_chg->lcs_wake_lock);
 #endif
-#ifdef CONFIG_LGE_PM
+#if 0 && defined(CONFIG_MACH_MSM8974_G3_LGU_EVB)
 	wake_lock_destroy(&smb349_chg->battgone_wake_lock);
 #endif
 
@@ -4841,13 +4163,8 @@ chg_susp_gpio_fail:
 #endif
 	if (smb349_chg->stat_gpio)
 		gpio_free(smb349_chg->stat_gpio);
-#if defined(CONFIG_MACH_MSM8974_G2_KR) || defined(CONFIG_MACH_MSM8974_VU3_KR) || \
-	defined(CONFIG_MACH_MSM8974_TIGERS)
-#if defined(CONFIG_MACH_MSM8974_G2_KR) || defined(CONFIG_MACH_MSM8974_TIGERS)
+#if defined(CONFIG_MACH_MSM8974_G3_LGU_EVB) || defined(CONFIG_MACH_MSM8974_G2_KR)
 	if(lge_get_board_revno() >= HW_REV_C)
-#elif defined(CONFIG_MACH_MSM8974_VU3_KR)
-	if(lge_get_board_revno() >= HW_REV_EVB2)
-#endif
 	{
 		if (smb349_chg->otg_en_gpio)
 			gpio_free(smb349_chg->otg_en_gpio);
@@ -4876,13 +4193,8 @@ static int __devexit smb349_remove(struct i2c_client *client)
 	power_supply_unregister(&smb349_chg->batt_psy);
 	if (smb349_chg->stat_gpio)
 		gpio_free(smb349_chg->stat_gpio);
-#if defined(CONFIG_MACH_MSM8974_G2_KR) || defined(CONFIG_MACH_MSM8974_VU3_KR) || \
-	defined(CONFIG_MACH_MSM8974_TIGERS)
-#if defined(CONFIG_MACH_MSM8974_G2_KR) || defined(CONFIG_MACH_MSM8974_TIGERS)
+#if defined(CONFIG_MACH_MSM8974_G3_LGU_EVB) || defined(CONFIG_MACH_MSM8974_G2_KR)
 	if(lge_get_board_revno() >= HW_REV_C)
-#elif defined(CONFIG_MACH_MSM8974_VU3_KR)
-	if(lge_get_board_revno() >= HW_REV_EVB2)
-#endif
 	{
 		if (smb349_chg->otg_en_gpio)
 			gpio_free(smb349_chg->otg_en_gpio);
@@ -4904,7 +4216,7 @@ static int __devexit smb349_remove(struct i2c_client *client)
 #ifdef CONFIG_LGE_CHARGER_TEMP_SCENARIO
 	wake_lock_destroy(&smb349_chg->lcs_wake_lock);
 #endif
-#ifdef CONFIG_LGE_PM
+#if 0 && defined(CONFIG_MACH_MSM8974_G3_LGU_EVB)
 	wake_lock_destroy(&smb349_chg->battgone_wake_lock);
 	qpnp_batif_unregist_batt_present(0);
 #endif
@@ -4959,13 +4271,8 @@ static void smb349_shutdown(struct i2c_client *client)
 
 	if (smb349_chg_is_otg_active(smb349_chg)) {
 		smb349_switch_usb_to_charge_mode(smb349_chg);
-#if defined(CONFIG_MACH_MSM8974_G2_KR) || defined(CONFIG_MACH_MSM8974_VU3_KR) || \
-	defined(CONFIG_MACH_MSM8974_TIGERS)
-#if defined(CONFIG_MACH_MSM8974_G2_KR) || defined(CONFIG_MACH_MSM8974_TIGERS)
+#if defined(CONFIG_MACH_MSM8974_G3_LGU_EVB) || defined(CONFIG_MACH_MSM8974_G2_KR)
 		if(lge_get_board_revno() >= HW_REV_C)
-#elif defined(CONFIG_MACH_MSM8974_VU3_KR)
-		if(lge_get_board_revno() >= HW_REV_EVB2)
-#endif
 		{
 			gpio_set_value(smb349_chg->otg_en_gpio, 0);
 		}
@@ -5010,9 +4317,7 @@ static int smb349_suspend(struct device *dev)
 		cancel_delayed_work_sync(&smb349_chg->bb_rechg_work);
 	}
 #endif
-#if I2C_SUSPEND_WORKAROUND
-	smb349_chg->suspended = 1;
-#endif //I2C_SUSPEND_WORKAROUND
+
 	return 0;
 }
 
@@ -5034,10 +4339,6 @@ static int smb349_resume(struct device *dev)
 		schedule_delayed_work(&smb349_chg->bb_rechg_work, 0);
 	}
 #endif
-
-#if I2C_SUSPEND_WORKAROUND
-	smb349_chg->suspended = 0;
-#endif //I2C_SUSPEND_WORKAROUND
 	return 0;
 }
 

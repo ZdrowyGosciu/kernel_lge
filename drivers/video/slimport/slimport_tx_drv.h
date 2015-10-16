@@ -15,13 +15,8 @@
 #ifndef _SP_TX_DRV_H
 #define _SP_TX_DRV_H
 
-#include <linux/slimport.h>
-#include "slimport_tx_reg.h"
-#include "../msm/mdss/mdss_hdmi_slimport.h"
-
 #define FALSE 0
 #define TRUE 1
-
 
 #define MAX_BUF_CNT 16
 #define VID_DVI_MODE 0x00
@@ -31,7 +26,6 @@
 #define SCDT_EXPIRE_TH 10
 #define SP_TX_HDCP_FAIL_TH 10
 #define SP_TX_DS_VID_STB_TH 20
-/* #define SP_REGISTER_SET_TEST */
 
 extern unchar bedid_extblock[128];
 extern unchar bedid_firstblock[128];
@@ -39,21 +33,6 @@ extern unchar bedid_firstblock[128];
 extern unchar slimport_link_bw;
 extern int external_block_en;
 
-#ifdef SP_REGISTER_SET_TEST
-/* For Slimport test */
-extern unchar val_SP_TX_LT_CTRL_REG0 ;
-extern unchar val_SP_TX_LT_CTRL_REG10 ;
-extern unchar val_SP_TX_LT_CTRL_REG11 ;
-extern unchar val_SP_TX_LT_CTRL_REG2 ;
-extern unchar val_SP_TX_LT_CTRL_REG12;
-extern unchar val_SP_TX_LT_CTRL_REG1;
-extern unchar val_SP_TX_LT_CTRL_REG6;
-extern unchar val_SP_TX_LT_CTRL_REG16;
-extern unchar val_SP_TX_LT_CTRL_REG5;
-extern unchar val_SP_TX_LT_CTRL_REG8;
-extern unchar val_SP_TX_LT_CTRL_REG15;
-extern unchar val_SP_TX_LT_CTRL_REG18;
-#endif
 enum SP_TX_System_State {
 	STATE_INIT = 1,
 	STATE_CABLE_PLUG,

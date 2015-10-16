@@ -1100,12 +1100,12 @@ int	broadcast_drv_if_get_dmb_data(struct broadcast_dmb_data_info *pdmb_data)
 	if(OnAir == 0 || pdmb_data==NULL) {
 		return ERROR;
 	}
-#if 0
+
 	if(pdmb_data->data_buf == NULL) {
 		TcpalPrintErr((I08S *)"[1seg] broadcast_drv_if_get_dmb_data[ERR] data_buf is null\n");
 		return ERROR;
 	}
-#endif
+
 	if(pdmb_data->data_buf_size < 188) {
 		TcpalPrintErr((I08S *)"[1seg] broadcast_drv_if_get_dmb_data[ERR] buffsize < 188\n");
 		return ERROR;

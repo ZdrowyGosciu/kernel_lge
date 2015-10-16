@@ -907,7 +907,6 @@ void trigger_baseline_state_machine(int plug_in, int type)
 			dev_info(&touch_test_dev->client->dev, " WIRELESS TA NOT CONNECTED.\n");
 			touch_test_dev->charging_mode = 0;
 			wireless = 0;
-
 #ifdef TSP_PATCH
 			if (!touch_test_dev->suspended) {
 				if(touch_test_dev->power_status == MXT_POWER_OFF || touch_test_dev->power_status == MXT_POWER_CFG_DEEPSLEEP){
@@ -925,22 +924,9 @@ void trigger_baseline_state_machine(int plug_in, int type)
 					wait_change_cfg = true;
 					touch_test_dev->ta_status = MXT_PATCH_WAKEUP_BAT_MODE_EVENT;
 				}else{
-					dev_info(&touch_test_dev->client->dev, " wireless: lpwg_mode: %d, ta_status: %d\n", touch_test_dev->lpwg_mode, touch_test_dev->ta_status);
-					if(touch_test_dev->lpwg_mode == LPWG_DOUBLE_TAP){
-						dev_info(&touch_test_dev->client->dev, " ~KNOCKON_BAT_MODE %d\n", MXT_PATCH_KNOCKON_BAT_MODE_EVENT);
-						touch_test_dev->ta_status = MXT_PATCH_KNOCKON_BAT_MODE_EVENT;
-						mxt_patch_test_event(touch_test_dev, MXT_PATCH_KNOCKON_BAT_MODE_EVENT);
-					}
-					else if(touch_test_dev->lpwg_mode == LPWG_PASSWORD){
-						dev_info(&touch_test_dev->client->dev, " ~PASSWORD_BAT_MODE %d\n", MXT_PATCH_PASSWORD_BAT_MODE_EVENT);
-						touch_test_dev->ta_status = MXT_PATCH_PASSWORD_BAT_MODE_EVENT;
-						mxt_patch_test_event(touch_test_dev, MXT_PATCH_PASSWORD_BAT_MODE_EVENT);
-					}
-					else{
-						dev_info(&touch_test_dev->client->dev, " WAKEUP_BAT_MODE %d\n", MXT_PATCH_WAKEUP_BAT_MODE_EVENT);
-						touch_test_dev->ta_status = MXT_PATCH_WAKEUP_BAT_MODE_EVENT;
-						mxt_patch_test_event(touch_test_dev, MXT_PATCH_WAKEUP_BAT_MODE_EVENT);
-					}
+					dev_info(&touch_test_dev->client->dev, " WAKEUP_BAT_MODE %d\n", MXT_PATCH_WAKEUP_BAT_MODE_EVENT);
+					touch_test_dev->ta_status = MXT_PATCH_WAKEUP_BAT_MODE_EVENT;
+					mxt_patch_test_event(touch_test_dev, MXT_PATCH_WAKEUP_BAT_MODE_EVENT);
 				}
 			}
 #endif
@@ -965,22 +951,9 @@ void trigger_baseline_state_machine(int plug_in, int type)
 					wait_change_cfg = true;
 					touch_test_dev->ta_status = MXT_PATCH_WAKEUP_WIRELESS_TA_MODE_EVENT;
 				}else{
-					dev_info(&touch_test_dev->client->dev, " wireless: lpwg_mode: %d, ta_status: %d\n", touch_test_dev->lpwg_mode, touch_test_dev->ta_status);
-					if(touch_test_dev->lpwg_mode == LPWG_DOUBLE_TAP){
-						dev_info(&touch_test_dev->client->dev, " ~KNOCKON_TA_MODE %d\n", MXT_PATCH_KNOCKON_TA_MODE_EVENT);
-						touch_test_dev->ta_status = MXT_PATCH_KNOCKON_TA_MODE_EVENT;
-						mxt_patch_test_event(touch_test_dev, MXT_PATCH_KNOCKON_TA_MODE_EVENT);
-					}
-					else if(touch_test_dev->lpwg_mode == LPWG_PASSWORD){
-						dev_info(&touch_test_dev->client->dev, " ~PASSWORD_TA_MODE %d\n", MXT_PATCH_PASSWORD_TA_MODE_EVENT);
-						touch_test_dev->ta_status = MXT_PATCH_PASSWORD_TA_MODE_EVENT;
-						mxt_patch_test_event(touch_test_dev, MXT_PATCH_PASSWORD_TA_MODE_EVENT);
-					}
-					else{
-						dev_info(&touch_test_dev->client->dev, " WAKEUP_WIRELESS_TA_MODE %d\n", MXT_PATCH_WAKEUP_WIRELESS_TA_MODE_EVENT);
-						touch_test_dev->ta_status = MXT_PATCH_WAKEUP_WIRELESS_TA_MODE_EVENT;
-						mxt_patch_test_event(touch_test_dev, MXT_PATCH_WAKEUP_WIRELESS_TA_MODE_EVENT);
-					}
+					dev_info(&touch_test_dev->client->dev, " WAKEUP_WIRELESS_TA_MODE %d\n", MXT_PATCH_WAKEUP_WIRELESS_TA_MODE_EVENT);
+					touch_test_dev->ta_status = MXT_PATCH_WAKEUP_WIRELESS_TA_MODE_EVENT;
+					mxt_patch_test_event(touch_test_dev, MXT_PATCH_WAKEUP_WIRELESS_TA_MODE_EVENT);
 				}
 			}
 #endif
@@ -2049,7 +2022,6 @@ static void mxt_proc_t93_messages(struct mxt_data *data, u8 *message)
 	dev_info(dev, "T93 %u \n",msg);
 
 	if( msg & 0x01){
-		mutex_lock(&data->input_dev->mutex);
 		mxt_t6_command(data, MXT_COMMAND_DIAGNOSTIC, 50, false);
 		mxt_proc_t37_message(data, message);
 #ifdef UDF_CONTROL_CLEAR_T37_DATA
@@ -2068,7 +2040,6 @@ static void mxt_proc_t93_messages(struct mxt_data *data, u8 *message)
 #else
 		send_uevent(lpwg_event);
 #endif
-		mutex_unlock(&data->input_dev->mutex);
 	}
 }
 #endif
@@ -3808,7 +3779,7 @@ static int mxt_configure_objects(struct mxt_data *data)
 }
 
 /* Firmware Version is returned as Major.Minor.Build */
-static ssize_t mxt_fw_ver_show(struct mxt_data *data, char *buf)
+static ssize_t mxt_fw_version_show(struct mxt_data *data, char *buf)
 {
 	int ret = 0;
 	u8 build = 0;
@@ -5194,7 +5165,7 @@ static ssize_t store_use_quick_window(struct mxt_data *data, const char *buf, si
 	return size;
 }
 
-static LGE_TOUCH_ATTR(fw_ver, S_IRUGO, mxt_fw_ver_show, NULL);
+static LGE_TOUCH_ATTR(fw_version, S_IRUGO, mxt_fw_version_show, NULL);
 static LGE_TOUCH_ATTR(hw_version, S_IRUGO, mxt_hw_version_show, NULL);
 static LGE_TOUCH_ATTR(mxt_info, S_IRUGO, mxt_mxt_info_show, NULL);
 static LGE_TOUCH_ATTR(self_test, S_IRUGO | S_IWUSR, mxt_selftest_show, mxt_selftest_store);
@@ -5223,7 +5194,7 @@ static LGE_TOUCH_ATTR(lpwg_notify, S_IRUGO | S_IWUSR, NULL, store_lpwg_notify);
 static LGE_TOUCH_ATTR(use_quick_window, S_IRUGO | S_IWUSR, NULL, store_use_quick_window);
 
 static struct attribute *lge_touch_attribute_list[] = {
-	&lge_touch_attr_fw_ver.attr,
+	&lge_touch_attr_fw_version.attr,
 	&lge_touch_attr_hw_version.attr,
 	&lge_touch_attr_mxt_info.attr,
 	&lge_touch_attr_self_test.attr,
@@ -5517,9 +5488,6 @@ static int gesture_control(struct mxt_data *data, int on)
 #endif
 	return NO_ERROR;
 mode_change:
-	if(data->mxt_password_enable == 0){
-		hrtimer_try_to_cancel(&data->multi_tap_timer);
-	}
 #ifdef MXT_FACTORY
 	if(factorymode){
 		dev_info(&data->client->dev,"[FACTORY MODE] Gesture_control Mode Change (%s)  KnockOn: %d / PASSWD : %d\n",
@@ -5620,12 +5588,7 @@ static void mxt_start(struct mxt_data *data)
 	//printk("lge_touch config_crc_mfts=0 at %s\n", __func__);
 	/* Recalibrate since touch doesn't power off when lcd on */
 	mxt_t6_command(data, MXT_COMMAND_CALIBRATE, 1, false);
-	/* disabled report touch irq until probing is finished */
-	if(!is_probing){
-		touch_enable_irq(data->irq);
-	}
-	else
-		TOUCH_INFO_MSG("probing isn't finished yet\n");
+	touch_enable_irq(data->irq);
 	do_gettimeofday(&t_ex_debug[TIME_START_TIME]);
 }
 
@@ -6377,14 +6340,6 @@ static int mxt_resume(struct device *dev)
 	dev_info(&client->dev, "%s\n", __func__);
 
 	mutex_lock(&input_dev->mutex);
-	if((lge_get_boot_mode() == LGE_BOOT_MODE_CHARGERLOGO) || (lge_get_laf_mode() == LGE_LAF_MODE_LAF)){
-		dev_warn(&data->client->dev, "%s : Ignore resume in Chargerlogo or Laf mode\n", __func__);
-		mutex_unlock(&input_dev->mutex);
-		return 0;
-	}
-	else
-		dev_warn(&data->client->dev, "%s : normal mode\n", __func__);
-
 #ifdef MXT_GESTURE_RECOGNIZE
 	if(!data->pdata->gpio_reset)
 		gpio_direction_output(data->pdata->gpio_reset, 1);

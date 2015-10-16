@@ -24,7 +24,7 @@
  * software in any way with any other Broadcom software provided under a license
  * other than the GPL, without Broadcom's express prior written consent.
  *
- * $Id: wlioctl.h 515139 2014-11-13 08:47:48Z $
+ * $Id: wlioctl.h 502018 2014-09-11 15:42:37Z $
  */
 
 #ifndef _wlioctl_h_
@@ -289,15 +289,6 @@ typedef struct wl_bss_info {
 	/* variable length Information Elements */
 } wl_bss_info_t;
 
-#define	WL_GSCAN_BSS_INFO_VERSION	1	/* current version of wl_gscan_bss_info struct */
-#define WL_GSCAN_INFO_FIXED_FIELD_SIZE   (sizeof(wl_gscan_bss_info_t) - sizeof(wl_bss_info_t))
-
-typedef struct wl_gscan_bss_info {
-	uint32      timestamp[2];
-	wl_bss_info_t info;
-	/* variable length Information Elements */
-} wl_gscan_bss_info_t;
-
 
 typedef struct wl_bsscfg {
 	uint32  bsscfg_idx;
@@ -382,12 +373,6 @@ typedef struct wlc_ssid {
 	uint32		SSID_len;
 	uchar		SSID[DOT11_MAX_SSID_LEN];
 } wlc_ssid_t;
-
-typedef struct wlc_ssid_ext {
-	bool       hidden;
-	uint32		SSID_len;
-	uchar		SSID[DOT11_MAX_SSID_LEN];
-} wlc_ssid_ext_t;
 
 
 #define MAX_PREFERRED_AP_NUM     5
@@ -523,14 +508,6 @@ typedef struct wl_escan_result {
 } wl_escan_result_t;
 
 #define WL_ESCAN_RESULTS_FIXED_SIZE (sizeof(wl_escan_result_t) - sizeof(wl_bss_info_t))
-
-typedef struct wl_gscan_result {
-	uint32 buflen;
-	uint32 version;
-	wl_gscan_bss_info_t bss_info[1];
-} wl_gscan_result_t;
-
-#define WL_GSCAN_RESULTS_FIXED_SIZE (sizeof(wl_gscan_result_t) - sizeof(wl_gscan_bss_info_t))
 
 /* incremental scan results struct */
 typedef struct wl_iscan_results {
@@ -2571,10 +2548,6 @@ enum {
 #define PFN_PARTIAL_SCAN_BIT		0
 #define PFN_PARTIAL_SCAN_MASK		1
 
-#define PFN_SWC_RSSI_WINDOW_MAX   8
-#define PFN_SWC_MAX_NUM_APS       16
-#define PFN_HOTLIST_MAX_NUM_APS   64
-
 /* PFN network info structure */
 typedef struct wl_pfn_subnet_info {
 	struct ether_addr BSSID;
@@ -2612,20 +2585,6 @@ typedef struct wl_pfn_scanresults {
 	uint32 count;
 	wl_pfn_net_info_t netinfo[1];
 } wl_pfn_scanresults_t;
-
-typedef struct wl_pfn_significant_net {
-	uint16 flags;
-	uint16 channel;
-	struct ether_addr BSSID;
-	int8 rssi[PFN_SWC_RSSI_WINDOW_MAX];
-} wl_pfn_significant_net_t;
-
-typedef struct wl_pfn_swc_results {
-	uint32 version;
-	uint32 pkt_count;
-	uint32 total_count;
-	wl_pfn_significant_net_t list[1];
-} wl_pfn_swc_results_t;
 
 /* used to report exactly one scan result */
 /* plus reports detailed scan info in bss_info */
@@ -2665,13 +2624,6 @@ typedef struct wl_pfn_bssid {
 	/* Bit4: suppress_lost, Bit3: suppress_found */
 	uint16             flags;
 } wl_pfn_bssid_t;
-
-typedef struct wl_pfn_significant_bssid {
-	struct ether_addr	macaddr;
-	int8    rssi_low_threshold;
-	int8    rssi_high_threshold;
-} wl_pfn_significant_bssid_t;
-
 #define WL_PFN_SUPPRESSFOUND_MASK	0x08
 #define WL_PFN_SUPPRESSLOST_MASK	0x10
 #define WL_PFN_RSSI_MASK		0xff00
@@ -2683,43 +2635,6 @@ typedef struct wl_pfn_cfg {
 	uint16	channel_list[WL_NUMCHANNELS];
 	uint32	flags;
 } wl_pfn_cfg_t;
-
-#define CH_BUCKET_REPORT_REGULAR            0
-#define CH_BUCKET_REPORT_FULL_RESULT        2
-#define CH_BUCKET_REPORT_ONE_SHOT           4
-
-typedef struct wl_pfn_gscan_channel_bucket {
-	uint16 bucket_end_index;
-	uint8 bucket_freq_multiple;
-	uint8 flag;
-} wl_pfn_gscan_channel_bucket_t;
-
-#define GSCAN_SEND_ALL_RESULTS_MASK    (1 << 0)
-#define GSCAN_CFG_FLAGS_ONLY_MASK      (1 << 7)
-#define WL_GSCAN_CFG_VERSION            1
-typedef struct wl_pfn_gscan_cfg {
-	uint16 version;
-	/* BIT0 1 = send probes/beacons to HOST
-	 * BIT1 Reserved
-	 * BIT2 Reserved
-	 * Add any future flags here
-	 * BIT7 1 = no other useful cfg sent
-	 */
-	uint8 flags;
-	/* Buffer filled threshold in % to generate an event */
-	uint8   buffer_threshold;
-	/* No. of BSSIDs with "change" to generate an evt
-	 * change - crosses rssi threshold/lost
-	 */
-	uint8   swc_nbssid_threshold;
-	/* Max=8 (for now) Size of rssi cache buffer */
-	uint8  swc_rssi_window_size;
-	uint8  count_of_channel_buckets;
-	uint8  retry_threshold;
-	uint16  lost_ap_window;
-	wl_pfn_gscan_channel_bucket_t channel_bucket[1];
-} wl_pfn_gscan_cfg_t;
-
 #define WL_PFN_REPORT_ALLNET    0
 #define WL_PFN_REPORT_SSIDNET   1
 #define WL_PFN_REPORT_BSSIDNET  2
@@ -2742,16 +2657,6 @@ typedef struct wl_pfn_list {
 	uint32		count;
 	wl_pfn_t	pfn[1];
 } wl_pfn_list_t;
-
-#define WL_PFN_MAC_OUI_ONLY_MASK      1
-#define WL_PFN_SET_MAC_UNASSOC_MASK   2
-/* To configure pfn_macaddr */
-typedef struct wl_pfn_macaddr_cfg {
-	uint8 version;
-	uint8 flags;
-	struct ether_addr macaddr;
-} wl_pfn_macaddr_cfg_t;
-#define WL_PFN_MACADDR_CFG_VER 1
 
 typedef BWL_PRE_PACKED_STRUCT struct pfn_olmsg_params_t {
 	wlc_ssid_t ssid;
@@ -3044,6 +2949,7 @@ typedef struct wl_pkt_filter_pattern {
 		uint32	offset;		/* Offset within received packet to start pattern matching.
 				 * Offset '0' is the first byte of the ethernet header.
 				 */
+		wl_pkt_decrypter_t*	decrypt_ctx;	/* Decrypt context */
 	};
 	uint32	size_bytes;	/* Size of the pattern.  Bitmask must be the same size. */
 	uint8   mask_and_pattern[1]; /* Variable length mask and pattern data.  mask starts

@@ -533,27 +533,6 @@ config LGE_CHARGER_TEMP_SCENARIO
 	help
 	  LGE CHARGER TEMP SCENARIO Configuration
 
-config LGE_WLC_CHARGER_TEMP_SCENARIO
-	depends on LGE_PM
-	default n
-	bool "LGE Wireless CHARGING TEMP SCENARIO Configuration"
-	help
-	  LGE Wireless CHARGER TEMP SCENARIO Configuration
-	  only use the VZW model.
-
-config LGE_PM_PWR_KEY_FOR_CHG_LOGO
-	bool "Control the PWR KEY for charger logo"
-	depends on LGE_PM
-	help
-	  PWR KEY could be controlled by this code.
-
-config SMB349_VZW_FAST_CHG
-	depends on SMB349_CHARGER
-	default n
-	bool "SMB349 Verizon Fast Charging"
-	help
-	  Say Y to Support Verizon Fast Charging
-
 config LGE_QC_2_0_SCENARIO
 	tristate "LGE CHARGING SCENARIO of QC 2.0"
 	depends on QPNP_CHARGER
@@ -561,55 +540,6 @@ config LGE_QC_2_0_SCENARIO
 	default n
 	help
 	  LGE CHARGING SCENARIO of QC 2.0
-
-config WIRELESS_CHARGER
-	bool "Wireless Charger Configuration"
-	default n
-	help
-	  Say Y here to enable support for wireless charger driver
-	  charging current is 800mA and can charge enable/disable on the
-	  scenario.
-	  should be applied only to VZW/LGU/KT/SKT model.
-
-config BQ51051B_CHARGER
-	bool "TI BQ51051B charger control Driver"
-	depends on WIRELESS_CHARGER
-	help
-	  TI BQ51051B wireless charging control driver
-	  BQ51051B is a high efficiency, wireless power reveiver with
-	  Li-Ion/Li-Pol battery charge controller for portable application.
-	  Power state output tracks rectifier and battery voltage
-	  to ensure maximum efficiency across the full charg cycle.
-
-config BQ51053B_CHARGER
-	bool "TI BQ51053B charger control Driver"
-	depends on WIRELESS_CHARGER
-	default n
-	help
-	  TI BQ51053B wireless charging control driver
-	  BQ51053B is a high efficiency, wireless power reveiver with
-	  Li-Ion/Li-Pol battery charge controller for portable application.
-	  Power state output tracks rectifier and battery voltage
-	  to ensure maximum efficiency across the full charg cycle.
-
-config FTT_CHARGER_V3
-	bool "Wireless charging support FTT v3"
-	default n
-	help
-	  Wireless charging support FTT v3
-	  Android ftt_ctrld : v3.2.1
-	  FTT Kernel device driver : v3.2.1
-	  FTT Demo app : 120326-1
-
-config FTT_SYSFS
-	bool "Wireless charging support FTT v3 sysfs"
-	depends on FTT_CHARGER_V3
-	default n
-	help
-	  Wireless charging support FTT v3 sysfs
-	  type_test is wireless and
-	  power_supply_type is POWER_SUPPLY_TYPE_WIRELESS.
-	  power supply item is ftt_anntena_level.
 
 config LGE_QC_2_0_SCENARIO_WITH_VOLTAGE
 	tristate "lge usb input voltage scenario of QC 2.0"
@@ -628,15 +558,6 @@ config MAX17048_FUELGAUGE
 	  MAX17048 is fuel-gauge systems for lithium-ion (Li+) batteries
 	  in handheld and portable equipment. The MAX17048 is configured
 	  to operate with a single lithium cell
-
-config MAX17050_FUELGAUGE
-	tristate "Maxim MAX17050 fuel gauging external driver"
-	depends on I2C && LGE_PM
-	default n
-	help
-	  MAX17050 is fuel-gauge systems for lithium-ion (Li+) batteries
-	  in handheld and portable equipment. The MAX17050 is configured
-	  to operate with a single lithium cell.
 
 config LGE_PM_BATTERY_ID_CHECKER
 	tristate "Virtual Device for LGE Battery ID Checker"
@@ -763,32 +684,4 @@ config LGE_SMART_CHARGING
 	default n
 	help
 		Say Y to enable support for smart charging
-
-config LGE_G2_EMBEDDED_BATT
-	depends on SMB349_CHARGER
-	bool "56K & 910K Factory Cable Configuration"
-	default n
-	help
-	  Say Y to stop charging at 56k & 910k factory cable
-
-config VZW_LLK
-	depends on SMB349_CHARGER
-	default n
-	bool "SMB349 Verizon LLK"
-	help
-	  Say Y to Support Verizon LLK
-
-config LGE_PM_BATTERY_BATT_ADC_G2_BASE
-	bool "Apply batt adc table for G2 base model"
-	depends on LGE_PM
-	default n
-	help
-		Say Y to apply batt adc table for g2 base model
-
-config LGE_PM_CHARGING_TEMP_SCENARIO_V1_7
-	bool "LGE CHARGING TEMP SCENARIO V1.7 Configuration"
-	depends on LGE_PM
-	default n
-	help
-		LGE CHARGING TEMP SCENARIO V1.7 Configuration
 endif # POWER_SUPPLY

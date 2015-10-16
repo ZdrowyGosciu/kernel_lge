@@ -84,7 +84,7 @@ static inline u32 mdss_mdp_reg_read(u32 addr)
 #define PERF_STATUS_DONE 0
 #define PERF_STATUS_BUSY 1
 
-#if defined(CONFIG_MACH_MSM8974_G3) || defined(CONFIG_MACH_MSM8974_DZNY)
+#ifdef CONFIG_MACH_MSM8974_G3
 #define VIDEO_PLAYBACK_AB_1_1_G3
 #endif
 

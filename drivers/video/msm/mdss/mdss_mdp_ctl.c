@@ -649,30 +649,6 @@ static u32 mdss_mdp_get_vbp_factor_max(struct mdss_mdp_ctl *ctl)
 	return vbp_max;
 }
 
-#ifndef BW_CHECK_AGAIN_FOR_UNDERRUN
-static bool mdss_mdp_video_mode_intf_connected(struct mdss_mdp_ctl *ctl)
-{
-	int i;
-	struct mdss_data_type *mdata;
-
-	if (!ctl || !ctl->mdata)
-		return 0;
-
-	mdata = ctl->mdata;
-	for (i = 0; i < mdata->nctl; i++) {
-		struct mdss_mdp_ctl *ctl = mdata->ctl_off + i;
-
-		if (ctl->is_video_mode && ctl->power_on) {
-			pr_debug("video interface connected ctl:%d\n",
-			ctl->num);
-			return true;
-		}
-	}
-
-	return false;
-}
-#endif
-
 static void __mdss_mdp_perf_calc_ctl_helper(struct mdss_mdp_ctl *ctl,
 		struct mdss_mdp_perf_params *perf,
 		struct mdss_mdp_pipe **left_plist, int left_cnt,
@@ -774,7 +750,6 @@ static void mdss_mdp_perf_calc_ctl(struct mdss_mdp_ctl *ctl,
 			left_plist, (left_plist ? MDSS_MDP_MAX_STAGE : 0),
 			right_plist, (right_plist ? MDSS_MDP_MAX_STAGE : 0));
 
-#ifdef BW_CHECK_AGAIN_FOR_UNDERRUN
 	if (ctl->is_video_mode) {
 		if (perf->bw_overlap > perf->bw_prefill)
 			perf->bw_ctl = apply_fudge_factor(perf->bw_ctl,
@@ -782,19 +757,11 @@ static void mdss_mdp_perf_calc_ctl(struct mdss_mdp_ctl *ctl,
 		else
 			perf->bw_ctl = apply_fudge_factor(perf->bw_ctl,
 				&mdss_res->ib_factor);
-
+#ifdef BW_CHECK_AGAIN_FOR_UNDERRUN
 		if (DIV_ROUND_UP_ULL(perf->bw_ctl, 1000) > 3200000) {
 			perf->bw_ctl = max(apply_fudge_factor(perf->bw_overlap,	&mdss_res->ib_factor_overlap),
 					apply_fudge_factor(perf->bw_prefill, &mdss_res->ib_factor));
 		}
-#else
-	if (ctl->is_video_mode || ((ctl->intf_type != MDSS_MDP_NO_INTF) &&
-		mdss_mdp_video_mode_intf_connected(ctl))) {
-		perf->bw_ctl =
-			max(apply_fudge_factor(perf->bw_overlap,
-				&mdss_res->ib_factor_overlap),
-			apply_fudge_factor(perf->bw_prefill,
-				&mdss_res->ib_factor));
 #endif
 	}
 	pr_debug("ctl=%d clk_rate=%u\n", ctl->num, perf->mdp_clk_rate);

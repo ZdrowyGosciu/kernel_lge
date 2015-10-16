@@ -29,7 +29,7 @@
 #include "q6voice.h"
 
 
-#define TIMEOUT_MS 500
+#define TIMEOUT_MS 300
 
 
 #define CMD_STATUS_SUCCESS 0
@@ -4717,50 +4717,6 @@ int voc_set_device_mute(uint32_t session_id, uint32_t dir, uint32_t mute,
 	return ret;
 }
 
-#ifdef CONFIG_MACH_LGE
-int voc_set_device_mute_lge(uint32_t session_id, uint32_t dir, uint32_t mute,
-			uint32_t ramp_duration)
-{
-	struct voice_data *v = NULL;
-	int ret = 0;
-	struct voice_session_itr itr;
-
-	voice_itr_init(&itr, session_id);
-	while (voice_itr_get_next_session(&itr, &v)) {
-		if (v != NULL) {
-			mutex_lock(&v->lock);
-			if (dir == VSS_IVOLUME_DIRECTION_TX) {
-				v->dev_tx.dev_mute = mute;
-				v->dev_tx.dev_mute_ramp_duration_ms =
-							ramp_duration;
-			} else {
-				v->dev_rx.dev_mute = mute;
-				v->dev_rx.dev_mute_ramp_duration_ms =
-							ramp_duration;
-			}
-
-			if (((v->voc_state == VOC_RUN) ||
-				(v->voc_state == VOC_STANDBY) ||
-				(v->voc_state == VOC_CHANGE)) &&
-				(v->lch_mode == 0))
-				ret = voice_send_device_mute_cmd(v,
-							dir,
-							mute,
-							ramp_duration);
-			mutex_unlock(&v->lock);
-		} else {
-			pr_err("%s: invalid session_id 0x%x\n", __func__,
-				session_id);
-
-			ret = -EINVAL;
-			break;
-		}
-	}
-
-	return ret;
-}
-#endif
-
 int voc_get_rx_device_mute(uint32_t session_id)
 {
 	struct voice_data *v = voice_get_session(session_id);
@@ -5366,12 +5322,10 @@ exit:
 
 void voc_register_mvs_cb(ul_cb_fn ul_cb,
 			   dl_cb_fn dl_cb,
-			   voip_ssr_cb ssr_cb,
 			   void *private_data)
 {
 	common.mvs_info.ul_cb = ul_cb;
 	common.mvs_info.dl_cb = dl_cb;
-	common.mvs_info.ssr_cb = ssr_cb;
 	common.mvs_info.private_data = private_data;
 }
 
@@ -5422,14 +5376,6 @@ static int32_t qdsp_mvm_callback(struct apr_client_data *data, void *priv)
 		} else {
 			pr_debug("%s: Reset event received in Voice service\n",
 				__func__);
-
-			if (common.mvs_info.ssr_cb) {
-				pr_debug("%s: Informing reset event to VoIP\n",
-					__func__);
-				common.mvs_info.ssr_cb(data->opcode,
-						common.mvs_info.private_data);
-			}
-
 			apr_reset(c->apr_q6_mvm);
 			c->apr_q6_mvm = NULL;
 

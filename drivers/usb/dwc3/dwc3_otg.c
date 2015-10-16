@@ -51,12 +51,6 @@ void update_status(int code, int value);
 #ifdef CONFIG_QPNP_CHARGER
 extern struct pseudo_batt_info_type pseudo_batt_info;
 #endif
-#if defined (CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_RMI4) || defined(CONFIG_TOUCHSCREEN_ATMEL_S540) 
-#if defined (CONFIG_TOUCHSCREEN_SYNAPTICS_G2) || defined (CONFIG_MACH_MSM8974_TIGERS) || defined(CONFIG_MACH_MSM8974_B1_KR) || defined(CONFIG_MACH_MSM8974_B1W)
-struct workqueue_struct *touch_otg_wq;
-extern void trigger_baseline_state_machine(int plug_in, int type);
-#endif
-#endif
 
 /**
  * dwc3_otg_set_host_regs - reset dwc3 otg registers to host operation.
@@ -748,20 +742,11 @@ static int dwc3_otg_set_power(struct usb_phy *phy, unsigned mA)
 				goto psy_error;
 		}
 #endif
-#ifndef CONFIG_USB_DWC3_LGE_SINGLE_PSY
-		dotg->charger->chg_type = DWC3_INVALID_CHARGER;
-#endif
 	}
 
 	power_supply_changed(dotg->psy);
 
 	dotg->charger->max_power = mA;
-
-#if defined (CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_RMI4) || defined(CONFIG_TOUCHSCREEN_ATMEL_S540)
-#if defined (CONFIG_TOUCHSCREEN_SYNAPTICS_G2) || defined (CONFIG_MACH_MSM8974_TIGERS) || defined(CONFIG_MACH_MSM8974_B1_KR) || defined(CONFIG_MACH_MSM8974_B1W)
-	queue_work(touch_otg_wq, &dotg->touch_work);
-#endif
-#endif
 
 	return 0;
 
@@ -875,27 +860,6 @@ void dwc3_otg_init_sm(struct dwc3_otg *dotg)
 	}
 }
 
-#if defined (CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_RMI4) || defined(CONFIG_TOUCHSCREEN_ATMEL_S540)
-#if defined (CONFIG_TOUCHSCREEN_SYNAPTICS_G2) || defined (CONFIG_MACH_MSM8974_TIGERS) || defined(CONFIG_MACH_MSM8974_B1_KR) || defined(CONFIG_MACH_MSM8974_B1W)
-static void touch_otg_work(struct work_struct *w)
-{
-	struct dwc3_otg *dotg = container_of(w, struct dwc3_otg, touch_work);
-
-	if (dotg->charger->max_power == 0) {
-		trigger_baseline_state_machine(0, -1);
-		pr_info("[Touch] TA/USB OUT!!!!!!!!!!!!!!!!\n");
-	} else {
-			if (dotg->charger->chg_type == DWC3_DCP_CHARGER) {
-					trigger_baseline_state_machine(1, 1);
-					pr_info("[Touch] TA IN!!!!!!!!!!!!!!!!\n");
-			} else {
-					trigger_baseline_state_machine(1, 0);
-					pr_info("[Touch] USB IN!!!!!!!!!!!!!!!!\n");
-			}
-	}
-}
-#endif
-#endif
 /**
  * dwc3_otg_sm_work - workqueue function.
  *
@@ -1270,17 +1234,6 @@ int dwc3_otg_init(struct dwc3 *dwc)
 	dotg->otg.phy->state = OTG_STATE_UNDEFINED;
 
 	init_completion(&dotg->dwc3_xcvr_vbus_init);
-#if defined (CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_RMI4) || defined(CONFIG_TOUCHSCREEN_ATMEL_S540)
-#if defined (CONFIG_TOUCHSCREEN_SYNAPTICS_G2) || defined (CONFIG_MACH_MSM8974_TIGERS) || defined(CONFIG_MACH_MSM8974_B1_KR) || defined(CONFIG_MACH_MSM8974_B1W)
-	touch_otg_wq = create_singlethread_workqueue("touch_otg_wq");
-	if (!touch_otg_wq) {
-		dev_err(dwc->dev, "CANNOT create new workqueue\n");
-		goto err4;
-	}
-
-	INIT_WORK(&dotg->touch_work, touch_otg_work);
-#endif
-#endif
 	INIT_DELAYED_WORK(&dotg->sm_work, dwc3_otg_sm_work);
 
 	ret = request_irq(dotg->irq, dwc3_otg_interrupt, IRQF_SHARED,
@@ -1295,13 +1248,6 @@ int dwc3_otg_init(struct dwc3 *dwc)
 
 	return 0;
 
-#if defined (CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_RMI4) || defined(CONFIG_TOUCHSCREEN_ATMEL_S540)
-#if defined (CONFIG_TOUCHSCREEN_SYNAPTICS_G2) || defined (CONFIG_MACH_MSM8974_TIGERS) || defined(CONFIG_MACH_MSM8974_B1_KR) || defined(CONFIG_MACH_MSM8974_B1W)
-err4:
-	if (touch_otg_wq)
-		destroy_workqueue(touch_otg_wq);
-#endif
-#endif
 err3:
 	cancel_delayed_work_sync(&dotg->sm_work);
 	usb_set_transceiver(NULL);
@@ -1336,10 +1282,4 @@ void dwc3_otg_exit(struct dwc3 *dwc)
 		kfree(dotg);
 		dwc->dotg = NULL;
 	}
-#if defined (CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_RMI4) || defined(CONFIG_TOUCHSCREEN_ATMEL_S540)
-#if defined (CONFIG_TOUCHSCREEN_SYNAPTICS_G2) || defined (CONFIG_MACH_MSM8974_TIGERS) || defined(CONFIG_MACH_MSM8974_B1_KR) || defined(CONFIG_MACH_MSM8974_B1W)
-	if (touch_otg_wq)
-		destroy_workqueue(touch_otg_wq);
-#endif
-#endif
 }

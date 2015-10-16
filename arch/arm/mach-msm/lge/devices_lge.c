@@ -365,17 +365,7 @@ int lge_pm_get_cable_info(struct qpnp_vadc_chip *vadc,
 	}
 
 	for (i = 0; i < count; i++) {
-		/* LIMIT: Include ONLY A1, B1, Vu3, Z models used MSM8974 AA/AB */
-#ifdef CONFIG_ADC_READY_CHECK_JB
-		rc = qpnp_vadc_is_ready();
-		if (rc) {
-			printk(KERN_INFO "%s is skipped once\n", __func__);
-			continue;
-		}
-		rc = qpnp_vadc_read_lge(LR_MUX10_USB_ID_LV, &result);
-#else
 		rc = qpnp_vadc_read(vadc, LR_MUX10_USB_ID_LV, &result);
-#endif
 		if (rc < 0) {
 			if (rc == -ETIMEDOUT) {
 				/* reason: adc read timeout,
@@ -580,15 +570,15 @@ int __init lge_boot_mode_init(char *s)
 		lge_boot_mode = LGE_BOOT_MODE_CHARGER;
 	else if (!strcmp(s, "chargerlogo"))
 		lge_boot_mode = LGE_BOOT_MODE_CHARGERLOGO;
-	else if (!strcmp(s, "qem_130k") || !strcmp(s, "factory"))
+	else if (!strcmp(s, "qem_130k"))
 		lge_boot_mode = LGE_BOOT_MODE_FACTORY;
-	else if (!strcmp(s, "qem_56k") || !strcmp(s, "factory2"))
+	else if (!strcmp(s, "qem_56k"))
 		lge_boot_mode = LGE_BOOT_MODE_FACTORY2;
 	else if (!strcmp(s, "qem_910k"))
 		lge_boot_mode = LGE_BOOT_MODE_FACTORY3;
-	else if (!strcmp(s, "pif_130k") || !strcmp(s, "pifboot"))
+	else if (!strcmp(s, "pif_130k"))
 		lge_boot_mode = LGE_BOOT_MODE_PIFBOOT;
-	else if (!strcmp(s, "pif_56k") || !strcmp(s, "pifboot2"))
+	else if (!strcmp(s, "pif_56k"))
 		lge_boot_mode = LGE_BOOT_MODE_PIFBOOT2;
 	else if (!strcmp(s, "pif_910k"))
 		lge_boot_mode = LGE_BOOT_MODE_PIFBOOT3;
@@ -603,25 +593,6 @@ enum lge_boot_mode_type lge_get_boot_mode(void)
 {
 	return lge_boot_mode;
 }
-
-#ifdef CONFIG_MACH_MSM8974_G2_VZW
-static int lge_battery_low = 0;
-int __init lge_is_battery_low(char *status)
-{
-
-	if(!strcmp(status, "trickle"))
-		lge_battery_low = 1;
-
-	return 1;
-	printk("charging status : %s/n", status);
-}
-__setup("is_battery_low=", lge_is_battery_low);
-
-int lge_get_battery_low(void)
-{
-	return lge_battery_low;
-}
-#endif
 
 int lge_get_factory_boot(void)
 {
@@ -671,12 +642,8 @@ static hw_rev_type lge_bd_rev = HW_REV_1_0; /* HW_REV_B; */
 char *rev_str[] = {"evb1", "evb2", "rev_a", "rev_a1", "rev_b", "rev_c", "rev_d",
 	"rev_e", "rev_g", "rev_h", "rev_10", "rev_11", "rev_12",
 	"reserved"};
-#elif defined (CONFIG_MACH_MSM8974_G3_KDDI)
+#elif defined (CONFIG_MACH_MSM8974_G3_KDDI) || defined (CONFIG_MACH_MSM8974_DZNY_DCM)
 char *rev_str[] = {"evb1", "evb2", "rev_a", "rev_a1", "rev_b", "rev_c", "rev_d",
-	"rev_e","rev_f", "rev_g", "rev_h", "rev_10", "rev_11", "rev_12",
-	"reserved"};
-#elif defined (CONFIG_MACH_MSM8974_DZNY_DCM)
-char *rev_str[] = {"evb1", "evb2", "rev_a", "rev_b", "rev_c", "rev_d",
 	"rev_e","rev_f", "rev_g", "rev_h", "rev_10", "rev_11", "rev_12",
 	"reserved"};
 #else

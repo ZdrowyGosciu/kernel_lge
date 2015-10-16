@@ -43,8 +43,8 @@
 };
 
 &spi_tdmb {
-	tdmb-fc8080@0 {
-		compatible = "fci,tdmb-fc8080";
+	tdmb@0 {
+		compatible = "lge,tdmb";
 		reg = <0>;
 		interrupt-parent = <&msmgpio>;
 		interrupts = <77 0x0>;

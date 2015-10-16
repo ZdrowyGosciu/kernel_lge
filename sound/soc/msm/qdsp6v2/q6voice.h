@@ -1226,9 +1226,6 @@ typedef void (*dtmf_rx_det_cb_fn)(uint8_t *pkt,
 				  char *session,
 				  void *private_data);
 
-typedef void (*voip_ssr_cb) (uint32_t opcode,
-				void *private_data);
-
 struct mvs_driver_info {
 	uint32_t media_type;
 	uint32_t rate;
@@ -1236,7 +1233,6 @@ struct mvs_driver_info {
 	uint32_t dtx_mode;
 	ul_cb_fn ul_cb;
 	dl_cb_fn dl_cb;
-	voip_ssr_cb ssr_cb;
 	void *private_data;
 	uint32_t evrc_min_rate;
 	uint32_t evrc_max_rate;
@@ -1369,7 +1365,6 @@ struct voice_session_itr {
 
 void voc_register_mvs_cb(ul_cb_fn ul_cb,
 			dl_cb_fn dl_cb,
-			voip_ssr_cb ssr_cb,
 			void *private_data);
 
 void voc_register_dtmf_rx_detection_cb(dtmf_rx_det_cb_fn dtmf_rx_ul_cb,
@@ -1451,10 +1446,6 @@ int voc_set_tx_mute(uint32_t session_id, uint32_t dir, uint32_t mute,
 		    uint32_t ramp_duration);
 int voc_set_device_mute(uint32_t session_id, uint32_t dir, uint32_t mute,
 			uint32_t ramp_duration);
-#ifdef CONFIG_MACH_LGE
-int voc_set_device_mute_lge(uint32_t session_id, uint32_t dir, uint32_t mute,
-			uint32_t ramp_duration);
-#endif
 int voc_set_phonememo_tx_mute(uint32_t session_id, uint32_t dir, uint32_t mute); //[Audio][BSP] sehwan.lee@lge.com phonememo initial code
 int voc_get_rx_device_mute(uint32_t session_id);
 int voc_set_route_flag(uint32_t session_id, uint8_t path_dir, uint8_t set);

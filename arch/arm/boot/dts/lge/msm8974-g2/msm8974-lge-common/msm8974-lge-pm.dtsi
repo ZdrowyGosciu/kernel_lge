@@ -20,8 +20,7 @@
 			reg = <0x36>;
 			max17048,alert_gpio = <&msmgpio 9 0x00>;
 			max17048,alert_threshold = <2>;
-			max17048,full_design = <2610>;
-			max17048,empty = <0>;
+			max17048,full_design = <2540>;
 		};
 
 		max17050@36 {
@@ -133,12 +132,8 @@
 	qcom,msm-thermal {
 		qcom,limit-temp = <80>;
 		qcom,temp-hysteresis = <5>;
-		qcom,core-limit-temp = <90>;
+                qcom,core-limit-temp = <90>;
 		qcom,core-temp-hysteresis = <5>;
-
-		qcom,vdd-apps-rstr{
-			qcom,levels = <0>;
-		};
 	};
 
 	pm8941,lge_boost_gpio {

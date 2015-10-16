@@ -202,72 +202,6 @@ static struct lp5521_led_config lp5521_led_config[] = {
 		.max_current	= 90,
 	},
 };
-#elif defined(CONFIG_MACH_MSM8974_B1_KR) || defined(CONFIG_MACH_MSM8974_B1W)
-/* for HW rev.1.0 or higher */
-static struct lp5521_led_config lp5521_led_config[] = {
-	{
-		.name = "R",
-		.chan_nr	= 0,
-		.led_current	= 37,
-		.max_current	= 37,
-	},
-	{
-		.name = "G",
-		.chan_nr	= 1,
-		.led_current	= 180,
-		.max_current	= 180,
-	},
-	{
-		.name = "B",
-		.chan_nr	= 2,
-		.led_current	= 90,
-		.max_current	= 90,
-	},
-};
-
-/* for HW rev.C */
-static struct lp5521_led_config lp5521_led_config_rev_c[] = {
-	{
-		.name = "R",
-		.chan_nr	= 0,
-		.led_current	= 25,
-		.max_current	= 25,
-	},
-	{
-		.name = "G",
-		.chan_nr	= 1,
-		.led_current	= 180,
-		.max_current	= 180,
-	},
-	{
-		.name = "B",
-		.chan_nr	= 2,
-		.led_current	= 180,
-		.max_current	= 180,
-	},
-};
-
-/* for HW rev.B or lower */
-static struct lp5521_led_config lp5521_led_config_rev_b[] = {
-	{
-		.name = "R",
-		.chan_nr	= 0,
-		.led_current	= 37,
-		.max_current	= 37,
-	},
-	{
-		.name = "G",
-		.chan_nr	= 1,
-		.led_current	= 180,
-		.max_current	= 180,
-	},
-	{
-		.name = "B",
-		.chan_nr	= 2,
-		.led_current	= 180,
-		.max_current	= 180,
-	},
-};
 #else
 static struct lp5521_led_config lp5521_led_config[] = {
 	{
@@ -345,7 +279,7 @@ static struct lp5521_led_pattern board_led_patterns[] = {
 		.size_g = ARRAY_SIZE(mode7_green),
 		.size_b = ARRAY_SIZE(mode7_blue),
 	},
-#if defined(CONFIG_MACH_MSM8974_G3_LGU) || defined(CONFIG_MACH_MSM8974_G3_SKT) || defined(CONFIG_MACH_MSM8974_G3_KT) || defined(CONFIG_MACH_MSM8974_G3_ATT) || defined(CONFIG_MACH_MSM8974_G3_VZW) || defined(CONFIG_MACH_MSM8974_G3_SPR_US) || defined(CONFIG_MACH_MSM8974_G3_USC_US) || defined(CONFIG_MACH_MSM8974_G3_ACG_US) || defined(CONFIG_MACH_MSM8974_G3_TMO_US) || defined(CONFIG_MACH_MSM8974_G3_GLOBAL_COM) || defined(CONFIG_MACH_MSM8974_G3_CN) || defined(CONFIG_MACH_MSM8974_G3_CA) || defined(CONFIG_MACH_MSM8974_G3_LRA) || defined(CONFIG_MACH_MSM8974_B1_KR) || defined(CONFIG_MACH_MSM8974_B1W)
+#if defined(CONFIG_MACH_MSM8974_G3_LGU) || defined(CONFIG_MACH_MSM8974_G3_SKT) || defined(CONFIG_MACH_MSM8974_G3_KT) || defined(CONFIG_MACH_MSM8974_G3_ATT) || defined(CONFIG_MACH_MSM8974_G3_VZW) || defined(CONFIG_MACH_MSM8974_G3_SPR_US) || defined(CONFIG_MACH_MSM8974_G3_USC_US) || defined(CONFIG_MACH_MSM8974_G3_ACG_US) || defined(CONFIG_MACH_MSM8974_G3_TMO_US) || defined(CONFIG_MACH_MSM8974_G3_GLOBAL_COM) || defined(CONFIG_MACH_MSM8974_G3_CN) || defined(CONFIG_MACH_MSM8974_G3_CA) || defined(CONFIG_MACH_MSM8974_G3_LRA)
 	/* for dummy pattern IDs (defined LGLedRecord.java) */
 	{
 		/* ID_ALARM = 8 */
@@ -1029,7 +963,7 @@ static void lp5521_run_led_pattern(int mode, struct lp5521_chip *chip)
 	struct i2c_client *cl = chip->client;
 	int num_patterns = chip->pdata->num_patterns;
 
-#if defined(CONFIG_MACH_MSM8974_G3_LGU) || defined(CONFIG_MACH_MSM8974_G3_SKT) || defined(CONFIG_MACH_MSM8974_G3_KT) || defined(CONFIG_MACH_MSM8974_G3_ATT) || defined(CONFIG_MACH_MSM8974_G3_VZW) || defined(CONFIG_MACH_MSM8974_G3_SPR_US) || defined(CONFIG_MACH_MSM8974_G3_USC_US) || defined(CONFIG_MACH_MSM8974_G3_ACG_US) || defined(CONFIG_MACH_MSM8974_G3_TMO_US) || defined(CONFIG_MACH_MSM8974_G3_GLOBAL_COM) || defined(CONFIG_MACH_MSM8974_G3_CN) || defined(CONFIG_MACH_MSM8974_G3_CA) || defined(CONFIG_MACH_MSM8974_G3_LRA) || defined(CONFIG_MACH_MSM8974_B1_KR) || defined(CONFIG_MACH_MSM8974_B1W)
+#if defined(CONFIG_MACH_MSM8974_G3_LGU) || defined(CONFIG_MACH_MSM8974_G3_SKT) || defined(CONFIG_MACH_MSM8974_G3_KT) || defined(CONFIG_MACH_MSM8974_G3_ATT) || defined(CONFIG_MACH_MSM8974_G3_VZW) || defined(CONFIG_MACH_MSM8974_G3_SPR_US) || defined(CONFIG_MACH_MSM8974_G3_USC_US) || defined(CONFIG_MACH_MSM8974_G3_ACG_US) || defined(CONFIG_MACH_MSM8974_G3_TMO_US) || defined(CONFIG_MACH_MSM8974_G3_GLOBAL_COM) || defined(CONFIG_MACH_MSM8974_G3_CN) || defined(CONFIG_MACH_MSM8974_G3_CA) || defined(CONFIG_MACH_MSM8974_G3_LRA)
 	if (mode >= 1000) {
 		mode = mode - 1000;
 	}
@@ -1037,7 +971,7 @@ static void lp5521_run_led_pattern(int mode, struct lp5521_chip *chip)
 
 	chip->id_pattern_play = mode;
 
-#if defined(CONFIG_MACH_MSM8974_G3_LGU) || defined(CONFIG_MACH_MSM8974_G3_SKT) || defined(CONFIG_MACH_MSM8974_G3_KT) || defined(CONFIG_MACH_MSM8974_G3_ATT) || defined(CONFIG_MACH_MSM8974_G3_VZW) || defined(CONFIG_MACH_MSM8974_G3_SPR_US) || defined(CONFIG_MACH_MSM8974_G3_USC_US) || defined(CONFIG_MACH_MSM8974_G3_ACG_US) || defined(CONFIG_MACH_MSM8974_G3_TMO_US) || defined(CONFIG_MACH_MSM8974_G3_GLOBAL_COM) || defined(CONFIG_MACH_MSM8974_G3_CN) || defined(CONFIG_MACH_MSM8974_G3_CA) || defined(CONFIG_MACH_MSM8974_G3_LRA) || defined(CONFIG_MACH_MSM8974_B1_KR) || defined(CONFIG_MACH_MSM8974_B1W)
+#if defined(CONFIG_MACH_MSM8974_G3_LGU) || defined(CONFIG_MACH_MSM8974_G3_SKT) || defined(CONFIG_MACH_MSM8974_G3_KT) || defined(CONFIG_MACH_MSM8974_G3_ATT) || defined(CONFIG_MACH_MSM8974_G3_VZW) || defined(CONFIG_MACH_MSM8974_G3_SPR_US) || defined(CONFIG_MACH_MSM8974_G3_USC_US) || defined(CONFIG_MACH_MSM8974_G3_ACG_US) || defined(CONFIG_MACH_MSM8974_G3_TMO_US) || defined(CONFIG_MACH_MSM8974_G3_GLOBAL_COM) || defined(CONFIG_MACH_MSM8974_G3_CN) || defined(CONFIG_MACH_MSM8974_G3_CA) || defined(CONFIG_MACH_MSM8974_G3_LRA)
 #if 0
 	/* this process is not need, because dummy pattern defined in board file */
 	if (mode == PATTERN_FAVORITE_MISSED_NOTI || mode == PATTERN_CHARGING_COMPLETE_50 || mode == PATTERN_CHARGING_50) {
@@ -1131,7 +1065,7 @@ static ssize_t store_led_current_index(struct device *dev,
 	if (!chip)
 		return 0;
 
-#if defined(CONFIG_MACH_MSM8974_G3_LGU) || defined(CONFIG_MACH_MSM8974_G3_SKT) || defined(CONFIG_MACH_MSM8974_G3_KT) || defined(CONFIG_MACH_MSM8974_G3_ATT) || defined(CONFIG_MACH_MSM8974_G3_VZW) || defined(CONFIG_MACH_MSM8974_G3_SPR_US) || defined(CONFIG_MACH_MSM8974_G3_USC_US) || defined(CONFIG_MACH_MSM8974_G3_ACG_US) || defined(CONFIG_MACH_MSM8974_G3_TMO_US) || defined(CONFIG_MACH_MSM8974_G3_GLOBAL_COM) || defined(CONFIG_MACH_MSM8974_G3_CN) || defined(CONFIG_MACH_MSM8974_G3_CA) || defined(CONFIG_MACH_MSM8974_G3_LRA) || defined(CONFIG_MACH_MSM8974_B1_KR) || defined(CONFIG_MACH_MSM8974_B1W)
+#if defined(CONFIG_MACH_MSM8974_G3_LGU) || defined(CONFIG_MACH_MSM8974_G3_SKT) || defined(CONFIG_MACH_MSM8974_G3_KT) || defined(CONFIG_MACH_MSM8974_G3_ATT) || defined(CONFIG_MACH_MSM8974_G3_VZW) || defined(CONFIG_MACH_MSM8974_G3_SPR_US) || defined(CONFIG_MACH_MSM8974_G3_USC_US) || defined(CONFIG_MACH_MSM8974_G3_ACG_US) || defined(CONFIG_MACH_MSM8974_G3_TMO_US) || defined(CONFIG_MACH_MSM8974_G3_GLOBAL_COM) || defined(CONFIG_MACH_MSM8974_G3_CN) || defined(CONFIG_MACH_MSM8974_G3_CA) || defined(CONFIG_MACH_MSM8974_G3_LRA)
 	LP5521_INFO_MSG("[%s] prevent change current_index", __func__);
 	return 0;
 #endif
@@ -1465,18 +1399,6 @@ static int lp5521_probe(struct i2c_client *client,
 
 	mutex_init(&chip->lock);
 
-
-#if defined(CONFIG_MACH_MSM8974_B1_KR) || defined(CONFIG_MACH_MSM8974_B1W)
-	if (lge_get_board_revno() < HW_REV_1_0) {
-		lp5521_pdata.led_config = lp5521_led_config_rev_c;
-		LP5521_INFO_MSG("[%s] lp5521_led_config_rev_c!\n", __func__);
-	} else	if (lge_get_board_revno() <= HW_REV_B) {
-		lp5521_pdata.led_config = lp5521_led_config_rev_b;
-		LP5521_INFO_MSG("[%s] lp5521_led_config_rev_b!\n", __func__);
-	} else{
-	}
-#endif
-
 	chip->pdata = &lp5521_pdata;
 
     gpio_set_value((chip->rgb_led_en), 0);
@@ -1555,7 +1477,7 @@ static int lp5521_probe(struct i2c_client *client,
 		goto fail2;
 	}
 
-#if !(defined(CONFIG_MACH_MSM8974_G3_LGU) || defined(CONFIG_MACH_MSM8974_G3_SKT) || defined(CONFIG_MACH_MSM8974_G3_KT) || defined(CONFIG_MACH_MSM8974_G3_ATT) || defined(CONFIG_MACH_MSM8974_G3_VZW) || defined(CONFIG_MACH_MSM8974_G3_SPR_US) || defined(CONFIG_MACH_MSM8974_G3_USC_US) || defined(CONFIG_MACH_MSM8974_G3_ACG_US) || defined(CONFIG_MACH_MSM8974_G3_TMO_US) || defined(CONFIG_MACH_MSM8974_G3_GLOBAL_COM) || defined(CONFIG_MACH_MSM8974_G3_CN) || defined(CONFIG_MACH_MSM8974_G3_CA) || defined(CONFIG_MACH_MSM8974_G3_LRA) || defined(CONFIG_MACH_MSM8974_B1_KR) || defined(CONFIG_MACH_MSM8974_B1W))
+#if !(defined(CONFIG_MACH_MSM8974_G3_LGU) || defined(CONFIG_MACH_MSM8974_G3_SKT) || defined(CONFIG_MACH_MSM8974_G3_KT) || defined(CONFIG_MACH_MSM8974_G3_ATT) || defined(CONFIG_MACH_MSM8974_G3_VZW) || defined(CONFIG_MACH_MSM8974_G3_SPR_US) || defined(CONFIG_MACH_MSM8974_G3_USC_US) || defined(CONFIG_MACH_MSM8974_G3_ACG_US) || defined(CONFIG_MACH_MSM8974_G3_TMO_US) || defined(CONFIG_MACH_MSM8974_G3_GLOBAL_COM) || defined(CONFIG_MACH_MSM8974_G3_CN) || defined(CONFIG_MACH_MSM8974_G3_CA) || defined(CONFIG_MACH_MSM8974_G3_LRA))
 	lp5521_run_led_pattern(1, chip); /* 1: Power On pattern number */
 	LP5521_INFO_MSG("[%s] pattern id : 1(Power on)", __func__);
 	LP5521_INFO_MSG("[%s] complete\n", __func__);
@@ -1675,7 +1597,7 @@ static int lp5521_resume(struct i2c_client *client)
 			usleep_range(1000, 2000); /* Keep enable down at least 1ms */
 			chip->pdata->enable(1);
 			usleep_range(1000, 2000); /* 500us abs min. */
-#if !(defined(CONFIG_MACH_MSM8974_G3_LGU) || defined(CONFIG_MACH_MSM8974_G3_SKT) || defined(CONFIG_MACH_MSM8974_G3_KT) || defined(CONFIG_MACH_MSM8974_G3_ATT) || defined(CONFIG_MACH_MSM8974_G3_VZW) || defined(CONFIG_MACH_MSM8974_G3_SPR_US) || defined(CONFIG_MACH_MSM8974_G3_USC_US) || defined(CONFIG_MACH_MSM8974_G3_ACG_US) || defined(CONFIG_MACH_MSM8974_G3_TMO_US) || defined(CONFIG_MACH_MSM8974_G3_GLOBAL_COM) || defined(CONFIG_MACH_MSM8974_G3_CN) || defined(CONFIG_MACH_MSM8974_G3_CA) || defined(CONFIG_MACH_MSM8974_G3_LRA) || defined(CONFIG_MACH_MSM8974_B1_KR) || defined(CONFIG_MACH_MSM8974_B1W))
+#if !(defined(CONFIG_MACH_MSM8974_G3_LGU) || defined(CONFIG_MACH_MSM8974_G3_SKT) || defined(CONFIG_MACH_MSM8974_G3_KT) || defined(CONFIG_MACH_MSM8974_G3_ATT) || defined(CONFIG_MACH_MSM8974_G3_VZW) || defined(CONFIG_MACH_MSM8974_G3_SPR_US) || defined(CONFIG_MACH_MSM8974_G3_USC_US) || defined(CONFIG_MACH_MSM8974_G3_ACG_US) || defined(CONFIG_MACH_MSM8974_G3_TMO_US) || defined(CONFIG_MACH_MSM8974_G3_GLOBAL_COM) || defined(CONFIG_MACH_MSM8974_G3_CN) || defined(CONFIG_MACH_MSM8974_G3_CA) || defined(CONFIG_MACH_MSM8974_G3_LRA))
 			lp5521_write(client, LP5521_REG_RESET, 0xff);
 			usleep_range(10000, 20000);
 			ret = lp5521_configure(client);

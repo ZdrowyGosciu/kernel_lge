@@ -35,10 +35,6 @@
 #include "SynaImage_for_Z_revB_H_Pattern.h"
 #elif defined(CONFIG_MACH_MSM8974_G2_KDDI)
 #include "SynaImage_for_G2_KDDI.h"
-#elif defined(CONFIG_MACH_MSM8974_G2_VZW) // knockcode disable firmware for VS980
-#include "SynaImage_for_G2_TPK_OLD.h"
-#include "SynaImage_for_G2_LGIT_revA.h"
-#include "SynaImage_for_G2_LGIT_revB_OLD.h"
 #else
 #include "SynaImage_for_G2_LGIT_revA.h"
 #include "SynaImage_for_G2_LGIT_revB.h"
@@ -252,6 +248,13 @@ extern int keyguard_status;
 #if defined(CONFIG_MACH_MSM8974_G2_OPEN_COM) || defined(CONFIG_MACH_MSM8974_G2_OPT_AU)
 int g_mvol_for_touch;
 
+enum {
+	TOUCH_PANEL_UNKNOWN = 0,
+	TOUCH_PANEL_G1F_LGIT,
+	TOUCH_PANEL_G1F_SSUNTEL,
+	TOUCH_PANEL_G2_LGIT,
+};
+
 /* Board_lge.h */
 typedef enum {
 	TOUCH_ID_0V = 0,
@@ -300,8 +303,8 @@ touch_maker_id get_touch_maker_id(void)
 
 /* LIMIT: Include ONLY A1, B1, Vu3, Z models used MSM8974 AA/AB */
 #ifdef CONFIG_ADC_READY_CHECK_JB
-	while ((qpnp_vadc_is_ready() != 0) && (trial_us < 150)) {
-		msleep(10);
+	while ((qpnp_vadc_is_ready() != 0) && (trial_us < (200 * 1000))) {
+		udelay(1);
 		trial_us++;
 	}
 
@@ -531,16 +534,14 @@ int synaptics_ts_get_data(struct i2c_client *client, struct touch_data* data)
 			TOUCH_ERR_MSG("MultipleTap Custom Data read fail\n");
 		//	goto err_synaptics_getdata;
 		}
-		#if 0
 		{
 			int i = 0;
 			if (custom_gesture_status) {
-				for( i = 0; i < ts->password_tap_count; i++) {
-					TOUCH_INFO_MSG("lpwg data %d: 0:0x%-4x 1:0x%-4x 2:0x%-4x 3:0x%-4x\n",  i, lpwg_data[4*i], lpwg_data[4*i+1],lpwg_data[4*i+2],lpwg_data[4*i+3]);
-				}
+			for(i=0;i<ts->password_tap_count;i++) {
+				TOUCH_INFO_MSG("lpwg data %d: 0:0x%-4x 1:0x%-4x 2:0x%-4x 3:0x%-4x\n",  i, lpwg_data[4*i], lpwg_data[4*i+1],lpwg_data[4*i+2],lpwg_data[4*i+3]);
 			}
 		}
-		#endif
+		}
 		if (unlikely(touch_i2c_write_byte(client, PAGE_SELECT_REG, 0) < 0)) {
 			TOUCH_ERR_MSG("PAGE_SELECT_REG write fail\n");
 			return -EIO;
@@ -1544,9 +1545,7 @@ int synaptics_ts_init(struct i2c_client *client, struct touch_fw_info *fw_info)
 */
 	ts->is_probed = 1;
 #ifdef CONFIG_LGE_SECURITY_KNOCK_ON
-if(fw_info->fw_setting.ic_chip_rev != TOUCH_CHIP_REV_A) {
 	DO_SAFE(lpwg_tap_control(ts, 0), error);
-}
 	ts->double_tap_enable = 0;
 	ts->password_enable = 0;
 
@@ -2361,98 +2360,88 @@ err_t synaptics_ts_resume(struct i2c_client* client)
 
 err_t synaptics_ts_lpwg(struct i2c_client* client, u32 code, u32 value, struct point *data)
 {
-	struct synaptics_ts_data *ts = (struct synaptics_ts_data*)get_touch_handle(client);
-	u8 buf = 0;
+    struct synaptics_ts_data *ts = (struct synaptics_ts_data*)get_touch_handle(client);
+    u8 buf = 0;
 	int i = 0;
 
-	switch (code) {
-		case LPWG_READ:
-			TOUCH_DEBUG_MSG("LPWG_READ \n");
-			if (ts->password_enable) {
-				if (custom_gesture_status == 0) {
-					data[0].x = 1;
-					data[0].y = 1;
-					data[1].x = -1;
-					data[1].y = -1;
-					break;
-				}
+    switch (code) {
+    case LPWG_READ:
+		if (ts->password_enable) {
+			if( custom_gesture_status == 0) {
+				data[0].x = 1;
+				data[0].y = 1;
+				data[1].x = -1;
+				data[1].y = -1;
+				break;
+}
 
-				for (i = 0; i < ts->password_tap_count; i++) {
-					data[i].x = lpwg_data[4*i+1]<<8 | lpwg_data[4*i];
-					data[i].y = lpwg_data[4*i+3]<<8 | lpwg_data[4*i+2];
-#if 0
-					TOUCH_DEBUG_MSG("TAP  Position x:0x%x, y:0x%x\n", data[i].x, data[i].y);
-#endif
-				}
+			for(i=0;i< ts->password_tap_count;i++) {
+				data[i].x = lpwg_data[4*i+1]<<8 | lpwg_data[4*i];
+				data[i].y = lpwg_data[4*i+3]<<8 | lpwg_data[4*i+2];
+				TOUCH_DEBUG_MSG("TAP Position x:0x%x, y:0x%x\n", data[i].x, data[i].y);
 				// '-1' should be assinged to the last data.
 				// Each data should be converted to LCD-resolution.
-				data[i].x = -1;
-				data[i].y = -1;
 			}
-			break;
+			data[i].x = -1;
+			data[i].y = -1;
+		}
+        break;
+    case LPWG_ENABLE:
+        ts->lpwg_mode = value;
+		TOUCH_DEBUG_MSG("synaptics_ts_lpwg lpwg_mode : 0x%x, 0x%x, 0x%x", ts->lpwg_mode, ts->double_tap_enable, ts->password_enable );
+        // The 'lpwg_mode' is changed to 'value' but it is applied in suspend-state.
 
-		case LPWG_ENABLE:
-			ts->lpwg_mode = value;
-			TOUCH_DEBUG_MSG("LPWG_ENABLE mode : 0x%x, 0x%x, 0x%x \n", ts->lpwg_mode, ts->double_tap_enable, ts->password_enable );
-			// The 'lpwg_mode' is changed to 'value' but it is applied in suspend-state.
-
-			if (ts->double_tap_enable || ts->password_enable) {
-				// IC should sleep when proximity sensor's value is 'NEAR'.
-				if (value) {
-					DO_SAFE(touch_i2c_read(client, DEVICE_CONTROL_REG, 1, &buf), error);
-					buf = (buf & 0xFC) | DEVICE_CONTROL_NORMAL_OP;
-					DO_SAFE(touch_i2c_write_byte(client, DEVICE_CONTROL_REG, buf), error);
-					lpwg_tap_control(ts, 1);
-				} else {
-					DO_SAFE(touch_i2c_read(client, DEVICE_CONTROL_REG, 1, &buf), error);
-					buf = (buf & 0xFC) | DEVICE_CONTROL_SLEEP;
-					DO_SAFE(touch_i2c_write_byte(client, DEVICE_CONTROL_REG, buf), error);
-				}
-			}
-			break;
-
-		case LPWG_LCD_X:
-		case LPWG_LCD_Y:
-			// If touch-resolution is not same with LCD-resolution,
-			// position-data should be converted to LCD-resolution.
-			break;
-
-		case LPWG_ACTIVE_AREA_X1:
-		case LPWG_ACTIVE_AREA_X2:
-		case LPWG_ACTIVE_AREA_Y1:
-		case LPWG_ACTIVE_AREA_Y2:
-			// Quick Cover Area
-			break;
-
-		case LPWG_TAP_COUNT:
-			// Tap Count Control
-			if (value) {
-				DO_SAFE(synaptics_ts_page_data_read(client, LPWG_CTRL_PAGE, MULTITAP_COUNT_REG, 1, &buf), error);
-				TOUCH_DEBUG_MSG("LPWG_TAP_COUNT %d \n", value);
-				buf = (buf & 0x07) | (value << 3);
-				TOUCH_DEBUG_MSG("MultiTap LPWG Control Reg value 0x%02X \n", buf);
-				DO_SAFE(synaptics_ts_page_data_write_byte(client, LPWG_CTRL_PAGE, MULTITAP_COUNT_REG, buf), error);
-				DO_SAFE(touch_i2c_write_byte(client, PAGE_SELECT_REG, DEFAULT_PAGE), error);
-			}
-			ts->password_tap_count = value;
-			break;
-
-		case LPWG_REPLY:
-			// Do something, if you need.
-			TOUCH_DEBUG_MSG("LPWG_REPLY \n");
-			if (value == 0)
-				multi_tap_fail_try++;
-			else
-				multi_tap_fail_try = 0;
-			break;
-
-		default:
-			break;
-	}
-	return NO_ERROR;
-
+        if (ts->double_tap_enable || ts->password_enable) {
+            // IC should sleep when proximity sensor's value is 'NEAR'.
+            if (value) {
+                DO_SAFE(touch_i2c_read(client, DEVICE_CONTROL_REG, 1, &buf), error);
+                buf = (buf & 0xFC) | DEVICE_CONTROL_NORMAL_OP;
+                DO_SAFE(touch_i2c_write_byte(client, DEVICE_CONTROL_REG, buf), error);
+                lpwg_tap_control(ts, 1);
+            } else {
+                DO_SAFE(touch_i2c_read(client, DEVICE_CONTROL_REG, 1, &buf), error);
+                buf = (buf & 0xFC) | DEVICE_CONTROL_SLEEP;
+                DO_SAFE(touch_i2c_write_byte(client, DEVICE_CONTROL_REG, buf), error);
+}
+        }
+        break;
+    case LPWG_LCD_X:
+    case LPWG_LCD_Y:
+        // If touch-resolution is not same with LCD-resolution,
+        // position-data should be converted to LCD-resolution.
+        break;
+    case LPWG_ACTIVE_AREA_X1:
+    case LPWG_ACTIVE_AREA_X2:
+    case LPWG_ACTIVE_AREA_Y1:
+    case LPWG_ACTIVE_AREA_Y2:
+        // Quick Cover Area
+        break;
+    case LPWG_TAP_COUNT:
+		// Tap Count Control
+		if (value) {
+			DO_SAFE(synaptics_ts_page_data_read(client, LPWG_CTRL_PAGE, MULTITAP_COUNT_REG, 1, &buf), error);
+			TOUCH_DEBUG_MSG("TAP COUNT %d \n", value);
+			buf = (buf & 0x07) | (value << 3);
+			TOUCH_DEBUG_MSG("MultiTap LPWG Control Reg value 0x%02X \n", buf);
+			DO_SAFE(synaptics_ts_page_data_write_byte(client, LPWG_CTRL_PAGE, MULTITAP_COUNT_REG, buf), error);
+			DO_SAFE(touch_i2c_write_byte(client, PAGE_SELECT_REG, DEFAULT_PAGE), error);
+		}
+		ts->password_tap_count = value;
+        break;
+    case LPWG_REPLY:
+        // Do something, if you need.
+        TOUCH_INFO_MSG("[%s] LPWG_REPLY ???????????????\n", __func__);
+		if(value==0)
+			multi_tap_fail_try++;
+		else
+			multi_tap_fail_try = 0;
+		break;
+    default:
+        break;
+    }
+    return NO_ERROR;
 error:
-	return ERROR;
+    return ERROR;
 }
 #endif
 

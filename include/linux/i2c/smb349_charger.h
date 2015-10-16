@@ -31,25 +31,19 @@ struct smb349_platform_data {
 	int chg_current_ma;
 	int stat_gpio;
 	int term_current_ma;
-#if defined(CONFIG_MACH_MSM8974_G3_LGU_EVB) || defined(CONFIG_MACH_MSM8974_G2_KR) || defined(CONFIG_MACH_MSM8974_TIGERS)
+#if defined(CONFIG_MACH_MSM8974_G3_LGU_EVB) || defined(CONFIG_MACH_MSM8974_G2_KR)
 	int otg_en_gpio;
 #endif
 };
 
 typedef enum {
 	MAX17048_TYPE,
-#ifdef CONFIG_MAX17050_FUELGAUGE
-	MAX17050_TYPE,
-#endif
 	BMS_TYPE,
 	GAUGE_IC_TYPE_MAX
 } gauge_ic_type;
 
 extern int32_t smb349_is_ready(void);
 extern int32_t external_smb349_enable_charging(bool enable);
-#ifdef CONFIG_MAX17050_FUELGAUGE
-extern bool external_smb349_is_charger_present(void);
-#endif
 #ifdef CONFIG_WIRELESS_CHARGER
 int set_wireless_power_supply_control(int value);
 #ifdef CONFIG_BQ51053B_CHARGER
@@ -60,10 +54,6 @@ bool external_smb349_is_charger_present(void);
 #endif
 #ifdef CONFIG_SENSORS_QPNP_ADC_VOLTAGE
 extern int smb349_get_batt_temp_origin(void);
-#endif
-#ifdef CONFIG_VZW_LLK
-extern bool external_smb349_is_charger_present(void);
-extern int32_t vzw_llk_smb349_enable_charging(bool enable);
 #endif
 
 #endif

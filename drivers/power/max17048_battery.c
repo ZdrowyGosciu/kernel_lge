@@ -272,7 +272,7 @@ static int max17048_get_capacity_from_soc(void)
 
 	batt_soc = max17048_capacity_evaluator((int)batt_soc);
 #ifdef CONFIG_LGE_UPSCALING_LOW_SOC
-#ifdef CONFIG_LGE_PM_BATTERY_ID_CHECKER
+#ifdef CONFIG_LGE_BATT_DUALISATION
 	/* Report 0.42%(0x300) ~ 1% to 1% */
 	/* If Full and Emplty is changed, need to modify the value, 3 */
 	else if (batt_soc == 0 && buf[0] >= 3) {
@@ -623,18 +623,6 @@ static void max17048_work(struct work_struct *work)
 	}
 #endif
 
-#ifdef CONFIG_VZW_LLK
-	if (external_smb349_is_charger_present()) {
-		if (chip->capacity_level == 35) {
-			vzw_llk_smb349_enable_charging(0);
-			printk(KERN_INFO "%s : VZW LLK Charging Stop!!\n", __func__);
-		} else if (chip->capacity_level == 30) {
-			vzw_llk_smb349_enable_charging(1);
-			printk(KERN_INFO "%s : VZW LLK Charging Enable!!\n", __func__);
-		}
-	}
-#endif
-
 #ifdef CONFIG_MAX17048_SOC_ALERT
 	enable_irq(gpio_to_irq(chip->model_data->alert_gpio));
 #else
@@ -855,17 +843,9 @@ int max17048_set_rcomp_by_temperature(struct i2c_client *client)
 
 	/* Calculate RCOMP by temperature*/
 	if (temp > 20)
-#ifdef CONFIG_MACH_MSM8974_DZNY_DCM
-		new_rcomp = init_rcomp + (int)((temp - 20)*temp_hot/(-10000));
-#else
 		new_rcomp = init_rcomp + (int)((temp - 20)*temp_hot/(-1000));
-#endif
 	else if (temp < 20)
-#ifdef CONFIG_MACH_MSM8974_DZNY_DCM
-		new_rcomp = init_rcomp + (int)((temp - 20)*temp_hot/(-10000));
-#else
 		new_rcomp = init_rcomp + (int)((temp - 20)*temp_cold/(-1000));
-#endif
 	else
 		new_rcomp = init_rcomp;
 
@@ -1085,25 +1065,31 @@ static int max17048_parse_dt(struct device *dev,
 			&mdata->full_design);
 
 #ifdef CONFIG_LGE_PM_BATTERY_ID_CHECKER
+#ifdef CONFIG_MACH_MSM8974_G3_CN
 	if (cell_info == LGC_LLL) {
-		rc = of_property_read_u32(dev_node, "max17048,rcomp_lgc",
-				&mdata->rcomp);
-		rc = of_property_read_u32(dev_node, "max17048,temp_co_hot_lgc",
-				&mdata->temp_co_hot);
-		rc = of_property_read_u32(dev_node, "max17048,temp_co_cold_lgc",
-				&mdata->temp_co_cold);
-		rc = of_property_read_u32(dev_node, "max17048,empty_lgc",
-				&mdata->empty);
+		mdata->rcomp = 96;
+		mdata->temp_co_hot = 225;
+		mdata->temp_co_cold = 5050;
+		mdata->empty = 0;
 	} else if (cell_info == TCD_AAC) {
-		rc = of_property_read_u32(dev_node, "max17048,rcomp_tcd",
-				&mdata->rcomp);
-		rc = of_property_read_u32(dev_node, "max17048,temp_co_hot_tcd",
-				&mdata->temp_co_hot);
-		rc = of_property_read_u32(dev_node, "max17048,temp_co_cold_tcd",
-				&mdata->temp_co_cold);
-		rc = of_property_read_u32(dev_node, "max17048,empty_tcd",
-				&mdata->empty);
+		mdata->rcomp = 106;
+		mdata->temp_co_hot = 900;
+		mdata->temp_co_cold = 6325;
+		mdata->empty = 0;
 	}
+#else
+	if (cell_info == LGC_LLL) {
+		mdata->rcomp = 103;
+		mdata->temp_co_hot = 375;
+		mdata->temp_co_cold = 6650;
+		mdata->empty = 0;
+	} else if (cell_info == TCD_AAC) {
+		mdata->rcomp = 55;
+		mdata->temp_co_hot = 637;
+		mdata->temp_co_cold = 4525;
+		mdata->empty = 0;
+	}
+#endif
 #else
 	rc = of_property_read_u32(dev_node, "max17048,rcomp",
 			&mdata->rcomp);

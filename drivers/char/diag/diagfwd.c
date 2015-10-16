@@ -1382,7 +1382,7 @@ int diag_process_stm_cmd(unsigned char *buf, unsigned char *dest_buf)
 	return STM_RSP_NUM_BYTES;
 }
 
-#if defined(CONFIG_LGE_DIAG_USB_ACCESS_LOCK) && !defined(CONFIG_MACH_MSM8974_G3_SPR_US) && !defined(CONFIG_MACH_MSM8974_G2_SPR)
+#ifdef CONFIG_LGE_DIAG_USB_ACCESS_LOCK
 extern int get_diag_enable(void);
 #define DIAG_ENABLE	1
 #define DIAG_DISABLE	0
@@ -1392,9 +1392,6 @@ extern int get_diag_enable(void);
 #define COMMAND_DLOAD_RESET	0x3A
 #define COMMAND_TEST_MODE	0xFA
 #define COMMAND_TEST_MODE_RESET	0x29
-#if defined(CONFIG_MACH_MSM8974_G3_VZW) || defined(CONFIG_MACH_MSM8974_G2_VZW)
-#define COMMAND_VZW_AT_LOCK	0xF8
-#endif
 
 int is_filtering_command(char *buf)
 {
@@ -1421,11 +1418,6 @@ int is_filtering_command(char *buf)
 	case COMMAND_TEST_MODE_RESET :
 	    ret = 1;
 	    break;
-#if defined(CONFIG_MACH_MSM8974_G3_VZW) || defined(CONFIG_MACH_MSM8974_G2_VZW)
-	case COMMAND_VZW_AT_LOCK :
-	    ret = 1;
-	    break;
-#endif
 	default:
 	    ret = 0;
 	    break;
@@ -1464,7 +1456,7 @@ int diag_process_apps_pkt(unsigned char *buf, int len)
 	int result = 0;
 #endif
 
-#if defined(CONFIG_LGE_DIAG_USB_ACCESS_LOCK) && !defined(CONFIG_MACH_MSM8974_G3_SPR_US) && !defined(CONFIG_MACH_MSM8974_G2_SPR)
+#ifdef CONFIG_LGE_DIAG_USB_ACCESS_LOCK
 	/*	buf[0] : 0xA1(161) is a diag command for mdm port lock */
 	if ((is_filtering_command(buf) != 1) && (get_diag_enable() == DIAG_DISABLE))
 		return 0;

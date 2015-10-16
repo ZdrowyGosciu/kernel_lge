@@ -303,7 +303,13 @@ int mdss_mdp_smp_reserve(struct mdss_mdp_pipe *pipe)
 	if (pipe->mixer->type == MDSS_MDP_MIXER_TYPE_WRITEBACK)
 		wb_mixer = 1;
 
-	force_alloc = pipe->flags & MDP_SMP_FORCE_ALLOC;
+	/*
+	 * Don't want to allow SMP changes for backend composition pipes
+	 * inorder to preserve SMPs as much as possible.
+	 * On the contrary for non backend composition pipes we should
+	 * allow SMP allocations to prevent composition failures.
+	 */
+	force_alloc = !(pipe->flags & MDP_BACKEND_COMPOSITION);
 
 	mutex_lock(&mdss_mdp_smp_lock);
 	for (i = (MAX_PLANES - 1); i >= ps.num_planes; i--) {
@@ -344,7 +350,7 @@ int mdss_mdp_smp_reserve(struct mdss_mdp_pipe *pipe)
 		for (; i >= 0; i--)
 			mdss_mdp_smp_mmb_free(pipe->smp_map[i].reserved,
 				false);
-		rc = -ENOBUFS;
+		rc = -ENOMEM;
 	}
 	mutex_unlock(&mdss_mdp_smp_lock);
 

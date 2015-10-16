@@ -18,6 +18,10 @@
 };
 
 &soc {
+		qcom,camera@6e {
+			status = "disable";
+		};
+
 	qcom,cci@fda0C000 {
 		actuator0: qcom,actuator@18 {
 			cell-index = <1>;//Use Af_main_1 of dw9714
@@ -29,7 +33,7 @@
 		eeprom0: qcom,eeprom@a0 {
 			cell-index = <0>;
 			reg = <0xa0 0x0>;
-			qcom,eeprom-name = "sonyimx135";
+			qcom,eeprom-name = "imx135_eeprom";
 			compatible = "qcom,eeprom";
 			qcom,slave-addr = <0xa0>;
 			qcom,cci-master = <0>;
@@ -118,7 +122,7 @@
 			qcom,cci-master = <0>;
 		};
 
-		qcom,camera@6e {
+		lge,camera@6e {
 			status = "ok";
 			compatible = "qcom,imx208";
 			reg = <0x6e 0x0>;

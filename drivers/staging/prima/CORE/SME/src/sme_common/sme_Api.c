@@ -2285,8 +2285,6 @@ eHalStatus sme_ProcessMsg(tHalHandle hHal, vos_msg_t* pMsg)
                 if (pMsg->bodyptr)
                 {
                     sme_ProcessGetGtkInfoRsp(pMac, pMsg->bodyptr);
-                    vos_mem_zero(pMsg->bodyptr,
-                                  sizeof(tSirGtkOffloadGetInfoRspParams));
                     vos_mem_free(pMsg->bodyptr);
                 }
                 else
@@ -2575,27 +2573,6 @@ tANI_BOOLEAN csrIsScanAllowed(tpAniSirGlobal pMac)
 #endif
 }
 #endif
-
-/* ---------------------------------------------------------------------------
-    \fn sco_isScanAllowed
-    \brief check for scan interface connection status
-    \param pMac     - Pointer to the global MAC parameter structure
-    \param pScanReq - scan request structure.
-
-    \return tANI_BOOLEAN TRUE to allow scan otherwise FALSE
-  ---------------------------------------------------------------------------*/
-tANI_BOOLEAN sco_isScanAllowed(tpAniSirGlobal pMac, tCsrScanRequest *pscanReq)
-{
-    tANI_BOOLEAN ret;
-
-    if (pscanReq->p2pSearch)
-        ret = csrIsP2pSessionConnected(pMac);
-    else
-        ret = csrIsStaSessionConnected(pMac);
-
-    return !ret;
-}
-
 /* ---------------------------------------------------------------------------
     \fn sme_ScanRequest
     \brief a wrapper function to Request a 11d or full scan from CSR.
@@ -2618,7 +2595,7 @@ eHalStatus sme_ScanRequest(tHalHandle hHal, tANI_U8 sessionId, tCsrScanRequest *
     do
     {
         if(pMac->scan.fScanEnable &&
-           (pMac->isCoexScoIndSet ? sco_isScanAllowed(pMac, pscanReq) : TRUE))
+           ((FALSE == pMac->isCoexScoIndSet) || (TRUE == pscanReq->p2pSearch)))
         {
             status = sme_AcquireGlobalLock( &pMac->sme );
             if ( HAL_STATUS_SUCCESS( status ) )
@@ -3250,11 +3227,11 @@ eHalStatus sme_RoamDisconnectSta(tHalHandle hHal, tANI_U8 sessionId,
     \brief To disassociate a station. This is an asynchronous API.
     \param hHal - Global structure
     \param sessionId - sessionId of SoftAP
-    \param pDelStaParams -Pointer to parameters of the station to deauthenticate
+    \param pPeerMacAddr - Caller allocated memory filled with peer MAC address (6 bytes)
     \return eHalStatus  SUCCESS  Roam callback will be called to indicate actual results
   -------------------------------------------------------------------------------*/
 eHalStatus sme_RoamDeauthSta(tHalHandle hHal, tANI_U8 sessionId,
-                             struct tagCsrDelStaParams *pDelStaParams)
+                                tANI_U8 *pPeerMacAddr)
 {
    eHalStatus status = eHAL_STATUS_FAILURE;
    tpAniSirGlobal pMac = PMAC_STRUCT( hHal );
@@ -3270,7 +3247,8 @@ eHalStatus sme_RoamDeauthSta(tHalHandle hHal, tANI_U8 sessionId,
    {
       if( CSR_IS_SESSION_VALID( pMac, sessionId ) )
       {
-         status = csrRoamIssueDeauthStaCmd( pMac, sessionId, pDelStaParams);
+         status = csrRoamIssueDeauthStaCmd( pMac, sessionId, pPeerMacAddr,
+                     eSIR_MAC_DEAUTH_LEAVING_BSS_REASON);
       }
       else
       {
@@ -5331,7 +5309,6 @@ eHalStatus sme_InitChannels(tHalHandle hHal)
     return status;
 }
 
-#ifdef CONFIG_ENABLE_LINUX_REG
 /*-------------------------------------------------------------------------
     \fn sme_InitChannelsForCC
 
@@ -5344,7 +5321,7 @@ eHalStatus sme_InitChannels(tHalHandle hHal)
                          FAILURE or RESOURCES  The API finished and failed.
 --------------------------------------------------------------------------*/
 
-eHalStatus sme_InitChannelsForCC(tHalHandle hHal, driver_load_type init)
+eHalStatus sme_InitChannelsForCC(tHalHandle hHal)
 {
     eHalStatus          status = eHAL_STATUS_FAILURE;
     tpAniSirGlobal      pMac = PMAC_STRUCT(hHal);
@@ -5355,11 +5332,10 @@ eHalStatus sme_InitChannelsForCC(tHalHandle hHal, driver_load_type init)
             "%s: pMac is null", __func__);
         return status;
     }
-    status = csrInitChannelsForCC(pMac, init);
+    status = csrInitChannelsForCC(pMac);
 
     return status;
 }
-#endif
 
 /* ---------------------------------------------------------------------------
 
@@ -7519,15 +7495,6 @@ eHalStatus sme_HandleChangeCountryCode(tpAniSirGlobal pMac,  void *pMsgBuf)
            status = eHAL_STATUS_FAILURE;
            return status;
        }
-       /* Update the 11d country to default country from NV bin so that when
-        * callback is received for this default country, driver will not
-        * disable the 11d taking it as valid country by user.
-        */
-       smsLog(pMac, LOG1,
-         FL("Set default country code (%c%c) from NV as invalid country received"),
-         pMsg->countryCode[0],pMsg->countryCode[1]);
-       vos_mem_copy(pMac->scan.countryCode11d, pMsg->countryCode,
-                                 WNI_CFG_COUNTRY_CODE_LEN);
    }
    else
    {
@@ -9057,32 +9024,6 @@ eHalStatus sme_UpdateIsFastRoamIniFeatureEnabled(tHalHandle hHal,
   pMac->roam.configParam.isFastRoamIniFeatureEnabled = isFastRoamIniFeatureEnabled;
   csrNeighborRoamUpdateFastRoamingEnabled(pMac, isFastRoamIniFeatureEnabled);
 
-  return eHAL_STATUS_SUCCESS;
-}
-
-/*--------------------------------------------------------------------------
-  \brief sme_ConfigFwrRoaming() - enable/disable LFR support at runtime
-  When Supplicant issue enabled / disable fwr based roaming on the basis
-  of the Bssid modification in network block ( e.g. AutoJoin mody N/W block)
-
-  This is a synchronous call
-  \param hHal - The handle returned by macOpen.
-  \return eHAL_STATUS_SUCCESS - SME (enabled/disabled) offload scan successfully.
-          Other status means SME is failed to (enabled/disabled) offload scan.
-  \sa
-  --------------------------------------------------------------------------*/
-
-eHalStatus sme_ConfigFwrRoaming(tHalHandle hHal,
-        const v_BOOL_t isFastRoamEnabled)
-{
-  tpAniSirGlobal pMac = PMAC_STRUCT( hHal );
-  if (!pMac->roam.configParam.isFastRoamIniFeatureEnabled)
-  {
-      VOS_TRACE(VOS_MODULE_ID_SME, VOS_TRACE_LEVEL_INFO,
-                 "%s: FastRoam is disabled through ini", __func__);
-      return  eHAL_STATUS_FAILURE;
-  }
-  csrNeighborRoamUpdateFastRoamingEnabled(pMac, isFastRoamEnabled);
   return eHAL_STATUS_SUCCESS;
 }
 
@@ -11640,12 +11581,4 @@ void sme_resetCoexEevent(tHalHandle hHal)
     }
 
     return;
-}
-
-void sme_disable_dfs_channel(tHalHandle hHal, bool disbale_dfs)
-{
-    tpAniSirGlobal pMac  = PMAC_STRUCT(hHal);
-    pMac->scan.fEnableDFSChnlScan = !disbale_dfs;
-    csrDisableDfsChannel(pMac);
-
 }

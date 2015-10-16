@@ -1301,18 +1301,6 @@ int msm_camera_power_down(struct msm_camera_power_ctrl_t *ctrl,
 					SENSOR_GPIO_MAX);
 				continue;
 			}
-
-#if defined(CONFIG_MACH_LGE)
-			if((pd->seq_val == SENSOR_GPIO_RESET ||
-				pd->seq_val == SENSOR_GPIO_OIS_RESET) &&
-				ctrl->gpio_conf->gpio_num_info->gpio_num[pd->config_val] !=
-				GPIO_OUT_LOW) {
-				pr_err("%s skip seq_val = %d, value = %d\n", __func__, pd->seq_val,
-					ctrl->gpio_conf->gpio_num_info->gpio_num[pd->config_val]);
-				continue;
-			}
-#endif
-
 			if (!ctrl->gpio_conf->gpio_num_info->valid
 				[pd->seq_val])
 				continue;

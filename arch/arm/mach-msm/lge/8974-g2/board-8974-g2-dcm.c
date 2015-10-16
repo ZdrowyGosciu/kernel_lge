@@ -107,6 +107,11 @@ void __init lge_add_lcd_misc_devices(void)
  * into this category, and thus the driver should not be added here. The
  * EPROBE_DEFER can satisfy most dependency problems.
  */
+/* LGE_CHANGE_S, [WiFi][hayun.kim@lge.com], 2013-01-22, Wifi Bring Up */
+#if defined(CONFIG_BCMDHD) || defined(CONFIG_BCMDHD_MODULE)
+extern void init_bcm_wifi(void);
+#endif
+/* LGE_CHANGE_E, [WiFi][hayun.kim@lge.com], 2013-01-22, Wifi Bring Up */
 
 void __init msm8974_add_drivers(void)
 {
@@ -134,15 +139,14 @@ void __init msm8974_add_drivers(void)
 #ifdef CONFIG_LGE_ECO_MODE
 	lge_add_lge_kernel_devices();
 #endif
-#ifdef CONFIG_LGE_DIAG_USB_ACCESS_LOCK
+#ifdef CONFIG_LGE_DIAG_ENABLE_SYSFS
 	lge_add_diag_devices();
 #endif
-#if defined(CONFIG_LCD_KCAL)
-	lge_add_lcd_kcal_devices();
+/* LGE_CHANGE_S, [WiFi][hayun.kim@lge.com], 2013-01-22, Wifi Bring Up */
+#if defined(CONFIG_BCMDHD) || defined(CONFIG_BCMDHD_MODULE)
+	init_bcm_wifi();
 #endif
-#ifdef CONFIG_USB_G_LGE_ANDROID
-	lge_add_android_usb_devices();
-#endif
+/* LGE_CHANGE_E, [WiFi][hayun.kim@lge.com], 2013-01-22, Wifi Bring Up */
 }
 
 static struct of_dev_auxdata msm_hsic_host_adata[] = {
