@@ -199,7 +199,7 @@ static int mdss_mdp_video_timegen_setup(struct mdss_mdp_ctl *ctl,
 		       (vsync_polarity << 1) | /* VSYNC Polarity */
 		       (hsync_polarity << 0);  /* HSYNC Polarity */
 
-#ifdef CONFIG_SLIMPORT_ANX7816
+#if defined (CONFIG_SLIMPORT_ANX7816) || defined(CONFIG_SLIMPORT_ANX7808)
 	if (lge_get_boot_mode() == LGE_BOOT_MODE_FACTORY) {
 		if (MDSS_INTF_HDMI == ctx->intf_type) {
 			pr_info("[minios] Enable HDMI Grayscale Ramp pattern");

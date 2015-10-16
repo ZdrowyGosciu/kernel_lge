@@ -1663,9 +1663,17 @@ enum ieee80211_sa_query_action {
 #define WLAN_AKM_SUITE_8021X		0x000FAC01
 #define WLAN_AKM_SUITE_PSK		0x000FAC02
 
-/*for V.E*/
+/* soonhyuk.choi@lge.com add for VE,CCX of BRCM */
+/* BRCM_VE */
 #define WLAN_AKM_SUITE_FT_8021X		0x000FAC03
 #define WLAN_AKM_SUITE_FT_PSK		0x000FAC04
+#define WLAN_CIPHER_SUITE_PMK		0x00904C00
+/* BRCM_VE */
+/* BRCM_CCX */
+#define WLAN_AKM_SUITE_CCKM		0x00409600
+#define WLAN_AKM_SUITE_OSEN		0x506f9a01
+/* BRCM_CCX */
+/* soonhyuk.choi@lge.com add for VE,CCX of BRCM */
 
 #define WLAN_AKM_SUITE_SAE			0x000FAC08
 #define WLAN_AKM_SUITE_FT_OVER_SAE	0x000FAC09

@@ -51,7 +51,7 @@ static atomic_t g_bRuntimeRecord;
 static char IMMR_DEB = false;
 #include "ImmVibeSPI.c"
 #if (defined(VIBE_DEBUG) && defined(VIBE_RECORD)) || defined(VIBE_RUNTIME_RECORD)
-#include "tspdrvRecorder.c"
+#include <tspdrvRecorder.c>
 #endif
 
 #include "touch_fops.c"
@@ -96,7 +96,7 @@ static int g_nMajor = 0;
 #ifdef CONFIG_HIGH_RES_TIMERS
     #include "VibeOSKernelLinuxHRTime.c"
 #else
-    #include "VibeOSKernelLinuxTime.c"
+    #include <VibeOSKernelLinuxTime.c>
 #endif
 
 asmlinkage void _DbgOut(int level, const char *fmt,...)

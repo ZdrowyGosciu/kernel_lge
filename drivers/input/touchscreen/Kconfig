@@ -1077,6 +1077,17 @@ config TOUCHSCREEN_GT9XX
 
           If unsure, say N.
 
+config TOUCHSCREEN_SYNAPTICS_DISNEY
+	bool "LGE CORE with Synaptics for Disney"
+	help
+	  This enables lge core with synaptics driver for disney
+
+if TOUCHSCREEN_SYNAPTICS_DISNEY
+
+source "drivers/input/touchscreen/disney/Kconfig"
+
+endif
+
 config TOUCHSCREEN_SYNAPTICS_G3
 	bool "LGE CORE with Synaptics for G3"
 	help
@@ -1094,6 +1105,17 @@ config TOUCHSCREEN_SYNAPTICS_G2
 	  This enables lge core with synaptics driver for g2
 
 if TOUCHSCREEN_SYNAPTICS_G2
+
+source "drivers/input/touchscreen/g2/Kconfig"
+
+endif
+
+config TOUCHSCREEN_SYNAPTICS_TIGERS
+	bool "LGE CORE with Synaptics for TIGERS"
+	help
+	  This enables lge core with synaptics driver for TIGERS
+
+if TOUCHSCREEN_SYNAPTICS_TIGERS
 
 source "drivers/input/touchscreen/g2/Kconfig"
 

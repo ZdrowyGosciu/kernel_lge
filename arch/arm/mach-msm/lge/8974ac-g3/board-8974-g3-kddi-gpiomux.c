@@ -38,7 +38,7 @@ static struct gpiomux_setting ap2mdm_cfg = {
 	.pull = GPIOMUX_PULL_NONE,
 	.dir = GPIOMUX_OUT_LOW,
 };
-#if !defined(CONFIG_LGE_NFC_SONY_KDDI)
+#if !defined(CONFIG_LGE_NFC_SONY)
 static struct gpiomux_setting mdm2ap_status_cfg = {
 	.func = GPIOMUX_FUNC_GPIO,
 	.drv = GPIOMUX_DRV_2MA,
@@ -83,7 +83,7 @@ static struct msm_gpiomux_config mdm_configs[] __initdata = {
 			[GPIOMUX_SUSPENDED] = &ap2mdm_cfg,
 		}
 	},
-#if !defined(CONFIG_LGE_NFC_SONY_KDDI)
+#if !defined(CONFIG_LGE_NFC_SONY)
 	/* MDM2AP_STATUS */
 	{
 		.gpio = 46,
@@ -92,7 +92,7 @@ static struct msm_gpiomux_config mdm_configs[] __initdata = {
 		}
 	},
 #endif
-#if !defined(CONFIG_LGE_NFC_SONY_KDDI)
+#if !defined(CONFIG_LGE_NFC_SONY)
 	/* MDM2AP_ERRFATAL */
 	{
 		.gpio = 82,
@@ -131,7 +131,7 @@ static struct msm_gpiomux_config mdm_configs[] __initdata = {
 	},
 };
 
-#if defined(CONFIG_LGE_NFC_SONY_KDDI)
+#if defined(CONFIG_LGE_NFC_SONY)
 static struct gpiomux_setting gpio_uart_felica = {
 	.func = GPIOMUX_FUNC_2,
 	.drv = GPIOMUX_DRV_8MA,
@@ -845,7 +845,7 @@ static struct msm_gpiomux_config msm_mhl_configs[] __initdata = {
 			[GPIOMUX_ACTIVE]    = &mhl_active_1_cfg,
 		},
 	},
-#if !defined(CONFIG_LGE_NFC_SONY_KDDI)
+#if !defined(CONFIG_LGE_NFC_SONY)
 	{
 		/* mhl-sii8334 intr */
 		.gpio = 82,
@@ -935,7 +935,7 @@ static struct msm_gpiomux_config msm_blsp2_uart7_configs[] __initdata = {
 #endif
 
 static struct msm_gpiomux_config msm_rumi_blsp_configs[] __initdata = {
-#if !defined(CONFIG_LGE_NFC_SONY_KDDI)
+#if !defined(CONFIG_LGE_NFC_SONY)
 	{
 		.gpio      = 45,	/* BLSP2 UART8 TX */
 		.settings = {
@@ -971,7 +971,7 @@ static struct msm_gpiomux_config msm_lcd_configs[] __initdata = {
 
 };
 
-#if defined(CONFIG_LGE_NFC_SONY_KDDI)
+#if defined(CONFIG_LGE_NFC_SONY)
 static struct msm_gpiomux_config msm8974_nfc_configs_before_revb[] __initdata ={
 		/* FELICA PON */
 		{
@@ -1284,7 +1284,7 @@ static struct msm_gpiomux_config sd_card_det __initdata = {
 	},
 };
 
-#if defined(CONFIG_LGE_NFC_SONY_KDDI)
+#if defined(CONFIG_LGE_NFC_SONY)
 static struct msm_gpiomux_config msm8974_felica_uart_blsp1_configs[] __initdata = {
 	{
 		.gpio      = 53,		/* BLSP1 UART5 TX */
@@ -1692,7 +1692,7 @@ static struct msm_gpiomux_config sensor_configs[] __initdata = {
 			[GPIOMUX_SUSPENDED] = &sensor_int_config,
 		},
 	},
-#if !defined(CONFIG_LGE_NFC_SONY_KDDI)
+#if !defined(CONFIG_LGE_NFC_SONY)
 	{
 		.gpio      = 74,    /* PROXIMITY_INT */
 		.settings = {
@@ -1803,7 +1803,7 @@ static struct msm_gpiomux_config msm8974_sdc4_configs[] __initdata = {
 	},
 #endif
 /* LGE_BROADCAST_JFULLSEG } */
-#if !defined(CONFIG_LGE_NFC_SONY_KDDI)
+#if !defined(CONFIG_LGE_NFC_SONY)
 	{
 		/* DAT2 */
 		.gpio      = 94,
@@ -1920,7 +1920,7 @@ static struct gpiomux_setting bt_pcm_suspend_config = {
 };
 
 static struct msm_gpiomux_config bt_msm_blsp_configs[] __initdata = {
-#if !defined(CONFIG_LGE_NFC_SONY_KDDI)
+#if !defined(CONFIG_LGE_NFC_SONY)
 	{
 		.gpio = 53, /* BLSP2 UART10 TX */
 		.settings = {
@@ -2004,7 +2004,7 @@ static struct msm_gpiomux_config bt_pcm_configs[] __initdata = {
 			[GPIOMUX_SUSPENDED] = &bt_pcm_suspend_config,
 		},
 	},
-#if !defined(CONFIG_LGE_NFC_SONY_KDDI)
+#if !defined(CONFIG_LGE_NFC_SONY)
 	{
 		.gpio	   = 82,	/* BT_PCM_DOUT */
 		.settings = {
@@ -2069,7 +2069,7 @@ void __init msm_8974_init_gpiomux(void)
 #endif
 /* LGE_BROADCAST_JFULLSEG } */
 
-#if defined(CONFIG_LGE_NFC_SONY_KDDI)
+#if defined(CONFIG_LGE_NFC_SONY)
        if(lge_get_board_revno() >= HW_REV_B){
            msm_gpiomux_install(msm8974_nfc_configs_after_revb, ARRAY_SIZE(msm8974_nfc_configs_after_revb));
        }else {

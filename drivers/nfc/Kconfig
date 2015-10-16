@@ -143,29 +143,7 @@ config NFC_QNCI
 	  This is for i2c connected version. NCI protocol logic
 	  resides in the usermode and it has no other NFC dependencies.
 
-config LGE_NFC_SONY_CXD2235AGG
-	bool "CXD2235AGG NFC driver"
-	#depends on I2C && UART
-	default n
-	---help---
-	  Say yes if you want CDX2235AGG Near Field Communication driver.
-	  This is for i2c & UART connected version. If unsure, say N here.
-
-	  To compile this driver as a module, choose m here. The module will
-	  be called CDX2235AGG.
-	  
-config LGE_NFC_SONY_KDDI
-    bool "CXD2235BGG NFC driver for kddi"
-    #depends on I2C && UART
-    default n
-    ---help---
-      Say yes if you want CDX2235AGG Near Field Communication driver.
-      This is for i2c & UART connected version. If unsure, say N here.
-
-      To compile this driver as a module, choose m here. The module will
-      be called CDX2235AGG.
-
- config LGE_NFC_SONY_KDDI_EVB
+config LGE_NFC_SONY
     bool "CXD2235BGG NFC driver for kddi"
     #depends on I2C && UART
     default n
@@ -177,11 +155,17 @@ config LGE_NFC_SONY_KDDI
       be called CDX2235AGG.
       
 source "drivers/nfc/snfc/Kconfig"
-source "drivers/nfc/snfc_kddi/Kconfig"
 
-config NFC_BCM43341
+config NFC_BCM2079X
 	bool "Broadcom 2079X NFC Controller Driver"
 	depends on I2C
 	select CRC_CCITT
 	help
 	  Broadcom 2079X Near Field Communication controller support.
+
+config NFC_BCM43341
+	bool "Broadcom 43341 NFC Controller Driver"
+	depends on I2C
+	select CRC_CCITT
+	help
+	  Broadcom 43341 Near Field Communication controller support.

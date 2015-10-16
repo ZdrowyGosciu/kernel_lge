@@ -14,7 +14,6 @@
 /include/ "msm8974-lge-common.dtsi"
 
 &soc {
-
 };
 
 /* BLSP QUP I2C clock on V1 */

@@ -182,7 +182,6 @@ static int32_t msm_led_trigger_config(struct msm_led_flash_ctrl_t *fctrl,
 		break;
 
 	case MSM_CAMERA_LED_LOW:
-	case MSM_CAMERA_LED_TORCH:
 		if (fctrl->torch_trigger) {
 			max_curr_l = fctrl->torch_max_current;
 			for(i = 0; i < fctrl->num_sources; i++) {
@@ -197,6 +196,28 @@ static int32_t msm_led_trigger_config(struct msm_led_flash_ctrl_t *fctrl,
 			}
 			led_trigger_event2(fctrl->torch_trigger,
 				torch_curr[1], torch_curr[0]);
+		}
+		break;
+	case MSM_CAMERA_LED_TORCH:
+		if (fctrl->torch_trigger) {
+			max_curr_l = fctrl->torch_max_current;
+			for(i = 0; i < fctrl->num_sources; i++) {
+				if (cfg->flash_current[i] > 0 &&
+						cfg->flash_current[i] <= max_curr_l) {
+					torch_curr[i] = cfg->flash_current[i];
+				} else {
+					torch_curr[i] = fctrl->torch_op_current;
+					pr_err("LED %d current clamped to %d\n",
+						i, torch_curr[i]);
+				}
+			}
+#if !defined(CONFIG_MACH_MSM8974_DZNY_DCM)
+			led_trigger_event2(fctrl->torch_trigger,
+				torch_curr[1], torch_curr[0]);
+#else
+			led_trigger_event2(fctrl->torch_trigger,
+				1, 1);
+#endif
 		}
 		break;
 

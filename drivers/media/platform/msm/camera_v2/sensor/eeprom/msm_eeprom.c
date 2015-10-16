@@ -919,10 +919,17 @@ static int verify_eeprom_data(struct msm_eeprom_ctrl_t *e_ctrl)
 	lsc_cal_5k = 0;
 	lsc_cal_4k = 0;
 
-	r_g =  (e_ctrl->cal_data.mapdata[0x0001]*256) + e_ctrl->cal_data.mapdata[0x0000];
-	b_g = (e_ctrl->cal_data.mapdata[0x0003]*256) + e_ctrl->cal_data.mapdata[0x0002];
-	g_g = (e_ctrl->cal_data.mapdata[0x0005]*256) + e_ctrl->cal_data.mapdata[0x0004];
-	awb_checksum = (e_ctrl->cal_data.mapdata[0x0006]*256) + e_ctrl->cal_data.mapdata[0x0007];
+	if(e_ctrl->cal_data.mapdata[0x0700] == 0x03) { /* FUJI module */
+		r_g =  (e_ctrl->cal_data.mapdata[0x0000]*256) + e_ctrl->cal_data.mapdata[0x0001];
+		b_g = (e_ctrl->cal_data.mapdata[0x0002]*256) + e_ctrl->cal_data.mapdata[0x0003];
+		g_g = (e_ctrl->cal_data.mapdata[0x0004]*256) + e_ctrl->cal_data.mapdata[0x0005];
+		awb_checksum = (e_ctrl->cal_data.mapdata[0x0006]*256) + e_ctrl->cal_data.mapdata[0x0007];
+	} else {
+		r_g =  (e_ctrl->cal_data.mapdata[0x0001]*256) + e_ctrl->cal_data.mapdata[0x0000];
+		b_g = (e_ctrl->cal_data.mapdata[0x0003]*256) + e_ctrl->cal_data.mapdata[0x0002];
+		g_g = (e_ctrl->cal_data.mapdata[0x0005]*256) + e_ctrl->cal_data.mapdata[0x0004];
+		awb_checksum = (e_ctrl->cal_data.mapdata[0x0006]*256) + e_ctrl->cal_data.mapdata[0x0007];
+	}
 
 	for (k = 0; k < (17 * 13 * 4); k++) {
 		lsc_datasum_5k += e_ctrl->cal_data.mapdata[0x000C+k];
@@ -1086,7 +1093,7 @@ static int msm_eeprom_platform_probe(struct platform_device *pdev)
 		}
 
 		if(!verify_eeprom_data(e_ctrl)) {
-			pr_info("%s: eeprom data checksum success!\n", __func__);
+			pr_err("%s: eeprom data checksum success!\n", __func__);
 			break;
 		} else {
 			pr_err("%s: eeprom data checksum failed!, retry_cnt = %d\n", __func__, j--);

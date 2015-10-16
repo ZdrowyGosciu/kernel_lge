@@ -972,7 +972,7 @@ static int hdmi_tx_init_features(struct hdmi_tx_ctrl *hdmi_ctrl)
 {
 	struct hdmi_edid_init_data edid_init_data;
 	struct hdmi_hdcp_init_data hdcp_init_data;
-#ifndef CONFIG_SLIMPORT_ANX7816
+#if !(defined CONFIG_SLIMPORT_ANX7808 || defined CONFIG_SLIMPORT_ANX7816)
 	struct hdmi_cec_init_data cec_init_data;
 #endif
 
@@ -1021,7 +1021,7 @@ static int hdmi_tx_init_features(struct hdmi_tx_ctrl *hdmi_ctrl)
 
 		DEV_DBG("%s: HDCP feature initialized\n", __func__);
 	}
-#ifndef CONFIG_SLIMPORT_ANX7816
+#if !(defined CONFIG_SLIMPORT_ANX7808 || defined CONFIG_SLIMPORT_ANX7816)
 	/* Initialize CEC feature */
 	cec_init_data.io = &hdmi_ctrl->pdata.io[HDMI_TX_CORE_IO];
 	cec_init_data.sysfs_kobj = hdmi_ctrl->kobj;

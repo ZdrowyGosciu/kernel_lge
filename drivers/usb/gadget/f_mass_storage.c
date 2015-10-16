@@ -403,7 +403,7 @@ static char *envp_mode[][2] = {
 	{"AUTORUN=device_info", NULL},
 };
 #endif
-#ifdef CONFIG_USB_G_LGE_ANDROID_AUTORUN_VZW
+#ifdef CONFIG_DWC3_MSM_BC_12_VZW_SUPPORT
 static char *usb_drv_envp_mode[][2] = {
 	{"USB_DRV=uninstalled", NULL},
 	{"USB_DRV=installed", NULL},

@@ -18,7 +18,11 @@
 #include <linux/leds.h>
 
 #ifdef CONFIG_LGE_CHARGER_TEMP_SCENARIO
+#ifdef CONFIG_LGE_PM_CHARGING_TEMP_SCENARIO_V1_7
+#include <mach/lge_charging_scenario_v1_7.h>
+#else
 #include <mach/lge_charging_scenario.h>
+#endif
 #endif
 
 struct device;
@@ -152,12 +156,20 @@ enum power_supply_property {
 	POWER_SUPPLY_PROP_EXT_PWR_CHECK,
 	POWER_SUPPLY_PROP_BAT_REMOVED,
 #endif
-#ifdef CONFIG_VZW_POWER_REQ
+#if defined(CONFIG_VZW_POWER_REQ) || defined(CONFIG_SMB349_VZW_FAST_CHG)
 	POWER_SUPPLY_PROP_VZW_CHG,
 #endif
-#if defined(CONFIG_CHARGER_MAX77819) || defined(CONFIG_CHARGER_MAX8971) || defined(CONFIG_BQ24296_CHARGER)
+#if defined(CONFIG_CHARGER_MAX77819) || defined(CONFIG_CHARGER_MAX8971) || \
+    defined(CONFIG_BQ24296_CHARGER) || defined(CONFIG_SMB349_CHARGER)
 	POWER_SUPPLY_PROP_SAFTETY_CHARGER_TIMER,
 	POWER_SUPPLY_PROP_CHARGING_COMPLETE,
+#endif
+#ifdef CONFIG_FTT_CHARGER_V3
+	POWER_SUPPLY_PROP_FTT_ANNTENA_LEVEL,
+#endif
+#ifdef CONFIG_MAX17050_FUELGAUGE
+	POWER_SUPPLY_PROP_BATTERY_CONDITION,
+	POWER_SUPPLY_PROP_BATTERY_AGE,
 #endif
 #if defined(CONFIG_CHARGER_UNIFIED_WLC)
 	POWER_SUPPLY_PROP_WIRELESS_CHARGER_SWITCH,
@@ -214,7 +226,7 @@ enum power_supply_type {
 	POWER_SUPPLY_TYPE_USB_DCP,	/* Dedicated Charging Port */
 	POWER_SUPPLY_TYPE_USB_CDP,	/* Charging Downstream Port */
 	POWER_SUPPLY_TYPE_USB_ACA,	/* Accessory Charger Adapters */
-#if defined(CONFIG_CHARGER_UNIFIED_WLC)
+#if defined(CONFIG_CHARGER_UNIFIED_WLC) || defined(CONFIG_WIRELESS_CHARGER)
 	POWER_SUPPLY_TYPE_WIRELESS,
 #endif
 	POWER_SUPPLY_TYPE_BMS,		/* Battery Monitor System */

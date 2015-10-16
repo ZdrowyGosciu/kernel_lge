@@ -143,7 +143,9 @@ enum msm_i2c_state {
 #define QUP_OUT_FIFO_NOT_EMPTY		0x10
 #define I2C_GPIOS_DT_CNT		(2)		/* sda and scl */
 
-#if defined(CONFIG_CHARGER_MAX77819) || defined(CONFIG_BQ24192_CHARGER) || defined(CONFIG_INPUT_MAX14688)
+#if defined(CONFIG_CHARGER_MAX77819) || defined(CONFIG_BQ24192_CHARGER) || \
+    defined(CONFIG_INPUT_MAX14688) || defined(CONFIG_SMB349_CHARGER) || \
+    defined(CONFIG_BQ51053B_CHARGER)
 bool i2c_suspended;
 #endif
 #if defined(CONFIG_TOUCHSCREEN_ATMEL_S540) || defined(CONFIG_TOUCHSCREEN_SYNAPTICS_3404S)
@@ -795,7 +797,7 @@ qup_issue_write(struct qup_i2c_dev *dev, struct i2c_msg *msg, int rem,
 					(uint32_t)dev->base +
 					QUP_OUT_FIFO_BASE + (*idx), 0);
 				*idx += 2;
-			} else if (next->flags == 0 && dev->pos == msg->len - 1
+			} else if ((dev->pos == msg->len - 1)
 					&& *idx < (dev->wr_sz*2) &&
 					(next->addr != msg->addr)) {
 				/* Last byte of an intermittent write */
@@ -1805,7 +1807,9 @@ static int i2c_qup_pm_suspend_sys(struct device *device)
 	/* Acquire mutex to ensure current transaction is over */
 	mutex_lock(&dev->mlock);
 
-#if defined(CONFIG_CHARGER_MAX77819) || defined(CONFIG_BQ24192_CHARGER)|| defined(CONFIG_INPUT_MAX14688)
+#if defined(CONFIG_CHARGER_MAX77819) || defined(CONFIG_BQ24192_CHARGER) || \
+    defined(CONFIG_INPUT_MAX14688) || defined(CONFIG_SMB349_CHARGER) || \
+    defined(CONFIG_BQ51053B_CHARGER)
 	i2c_suspended = true;
 #endif
 #if defined(CONFIG_TOUCHSCREEN_ATMEL_S540)
@@ -1868,7 +1872,9 @@ static int i2c_qup_pm_resume_sys(struct device *device)
 		dev_info(device, "i2c can't wake up !!! pm_runtime_get_sync() doesn't work !!!\n");
 	}
 #endif /* CONFIG_MACH_LGE */
-#if defined(CONFIG_CHARGER_MAX77819) || defined(CONFIG_BQ24192_CHARGER) || defined(CONFIG_INPUT_MAX14688)
+#if defined(CONFIG_CHARGER_MAX77819) || defined(CONFIG_BQ24192_CHARGER) || \
+    defined(CONFIG_INPUT_MAX14688) || defined(CONFIG_SMB349_CHARGER) || \
+    defined(CONFIG_BQ51053B_CHARGER)
 	i2c_suspended = false;
 #endif
 #if defined(CONFIG_TOUCHSCREEN_ATMEL_S540)

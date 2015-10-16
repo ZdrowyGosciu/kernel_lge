@@ -2672,7 +2672,7 @@ ecryptfs_process_key_cipher(struct crypto_blkcipher **key_tfm,
 {
 	char dummy_key[ECRYPTFS_MAX_KEY_BYTES];
 	char *full_alg_name = NULL;
-	int rc;
+	int rc = 0;
 
 	*key_tfm = NULL;
 	if (*key_size > ECRYPTFS_MAX_KEY_BYTES) {
@@ -2685,8 +2685,7 @@ ecryptfs_process_key_cipher(struct crypto_blkcipher **key_tfm,
 	if (get_cc_mode_state()) {
 		kfree(full_alg_name);
 		full_alg_name = kmalloc(strlen("cbc(aes)") + 1, GFP_KERNEL);
-		strlcpy(full_alg_name, "cbc(aes)", strlen("cbc(aes)"));
-		full_alg_name[strlen("cbc(aes)")] = 0;
+		strlcpy(full_alg_name, "cbc(aes)", strlen("cbc(aes)") + 1);
 	} else {
 #endif
 	rc = ecryptfs_crypto_api_algify_cipher_name(&full_alg_name, cipher_name,

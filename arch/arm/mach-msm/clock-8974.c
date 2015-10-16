@@ -1491,7 +1491,7 @@ static struct clk_freq_tbl ftbl_gcc_gp_clk[] = {
  #else
 	F( 4800000,   cxo,  4,  0,   0),
 	F( 6000000, gpll0, 10,  1,  10),
-	F( 6750000, gpll0,  1,  1,  89), 
+	F( 6750000, gpll0,  1,  1,  89),
  #endif
 	F( 8000000, gpll0, 15,  1,   5),
 	F( 9600000,   cxo,  2,  0,   0),
@@ -4918,6 +4918,10 @@ static struct clk_lookup msm_clocks_8974_only[] __initdata = {
 };
 
 static struct clk_lookup msm_clocks_8974_common[] __initdata = {
+#ifdef CONFIG_SND_SOC_ES325_SLIM
+	CLK_LOOKUP("es325_clk", cxo_a2.c, "es325-codec-intf"),
+	CLK_LOOKUP("es325_clk_pin", cxo_a2_pin.c, "es325-codec-intf"),
+#endif
 	CLK_LOOKUP("xo",        cxo_otg_clk.c,                  "msm_otg"),
 	CLK_LOOKUP("xo",  cxo_pil_lpass_clk.c,      "fe200000.qcom,lpass"),
 	CLK_LOOKUP("xo",    cxo_pil_mss_clk.c,        "fc880000.qcom,mss"),
@@ -4927,19 +4931,24 @@ static struct clk_lookup msm_clocks_8974_common[] __initdata = {
 	CLK_LOOKUP("xo",       cxo_dwc3_clk.c,                 "msm_dwc3"),
 	CLK_LOOKUP("xo",  cxo_ehci_host_clk.c,            "msm_ehci_host"),
 	CLK_LOOKUP("xo",        cxo_lpm_clk.c,        "fc4281d0.qcom,mpm"),
-/*  LGE_CHANGE_S, [NFC][byunggu.kang@lge.com], 2013-10-09, NFC Bring up */
-#if defined(CONFIG_LGE_NFC) || defined(CONFIG_LGE_NFC_USE_PMIC)
+
+#if defined(CONFIG_LGE_NFC) && defined(CONFIG_LGE_NFC_USE_PMIC)
 #if defined(CONFIG_LGE_NFC_PN547_C2)
     CLK_LOOKUP("xo_pin",     cxo_d1_pin.c,                  "pn547"),
     CLK_LOOKUP("xo_cont",        cxo_d1.c,                  "pn547"),
+#elif defined(CONFIG_NFC_BCM2079X)
+    CLK_LOOKUP("xo_pin",      cxo_d1_pin.c,              "bcm2079x"),
+    CLK_LOOKUP("xo_cont",         cxo_d1.c,              "bcm2079x"),
 #else
     CLK_LOOKUP("xo",         cxo_d1_pin.c,              "nfc_ext19"),
 #endif
 #endif
-/*  LGE_CHANGE_E, [NFC][byunggu.kang@lge.com], 2013-10-09, NFC Bring up */
 
 #if defined(CONFIG_LGE_BROADCAST_TDMB)
 	CLK_LOOKUP("xo",             cxo_a2.c,                 "spi100.0"),
+#endif
+#if defined(CONFIG_LGE_BROADCAST_ISDBT_JAPAN)
+    CLK_LOOKUP("isdbt_xo",       cxo_a2.c,				   "8-0058"),
 #endif
 	CLK_LOOKUP("ref_clk",  cxo_d1_a_pin.c,                   "3-000e"),
 	CLK_LOOKUP("ref_clk_rf", cxo_a2_a_pin.c,                 "3-000e"),
@@ -4985,20 +4994,22 @@ static struct clk_lookup msm_clocks_8974_common[] __initdata = {
 	CLK_LOOKUP("core_clk", gcc_blsp1_uart4_apps_clk.c, ""),
 	CLK_LOOKUP("core_clk", gcc_blsp1_uart5_apps_clk.c, ""),
 	CLK_LOOKUP("core_clk", gcc_blsp1_uart6_apps_clk.c, ""),
-#if defined(CONFIG_LGE_NFC_SONY_CXD2235AGG) || defined(CONFIG_LGE_NFC_SONY_KDDI)
+
+#ifdef CONFIG_LGE_BLUETOOTH
+    CLK_LOOKUP("iface_clk", gcc_blsp1_ahb_clk.c, "f9921000.uart"),     // UART5
+#endif
+#ifdef CONFIG_LGE_BLUETOOTH
+    CLK_LOOKUP("iface_clk", gcc_blsp2_ahb_clk.c, "f9960000.uart"),  //G2
+#endif
+
+
+#if (defined(CONFIG_MACH_MSM8974_G3) || defined(CONFIG_MACH_MSM8974_DZNY)) && defined(CONFIG_LGE_NFC_SONY)
 	CLK_LOOKUP("iface_clk", gcc_blsp2_ahb_clk.c, "f9960000.serial"),
 #endif
 
 	CLK_LOOKUP("iface_clk", gcc_blsp2_ahb_clk.c, "f9967000.i2c"),
 	CLK_LOOKUP("iface_clk", gcc_blsp2_ahb_clk.c, "f9966000.spi"),
 	CLK_LOOKUP("iface_clk", gcc_blsp2_ahb_clk.c, "f995e000.serial"),
-#ifdef CONFIG_LGE_BLUETOOTH
-#ifdef CONFIG_LGE_NFC_SONY_KDDI_EVB
-	CLK_LOOKUP("iface_clk", gcc_blsp1_ahb_clk.c, "f9921000.serial"),     // UART5
-#else
-	CLK_LOOKUP("iface_clk", gcc_blsp1_ahb_clk.c, "f9921000.uart"),     // UART5
-#endif
-#endif
 #if defined(CONFIG_LGE_BROADCAST_TDMB)
 	CLK_LOOKUP("iface_clk", gcc_blsp2_ahb_clk.c, "f9964000.spi"),
 #endif /* LGE_BROADCAST */
@@ -5009,15 +5020,15 @@ static struct clk_lookup msm_clocks_8974_common[] __initdata = {
 #endif
 	CLK_LOOKUP("core_clk", gcc_blsp2_qup1_i2c_apps_clk.c, ""),
 	CLK_LOOKUP("core_clk", gcc_blsp2_qup1_spi_apps_clk.c, ""),
-	
-/* LGE_BROADCAST_JFULLSEG { */
-#if defined (CONFIG_LGE_BROADCAST_JFULLSEG)
+
+/* LGE_BROADCAST_ISDBT_JAPAN { */
+#if defined (CONFIG_LGE_BROADCAST_ISDBT_JAPAN)
 	CLK_LOOKUP("iface_clk", gcc_blsp2_ahb_clk.c, "f9964000.i2c"),
 	CLK_LOOKUP("core_clk", gcc_blsp2_qup2_i2c_apps_clk.c, "f9964000.i2c"),	/* BLSP8, BLSP 2 QUP 1, 0xF9964000 */
 #else
 	CLK_LOOKUP("core_clk", gcc_blsp2_qup2_i2c_apps_clk.c, ""),
 #endif
-/* LGE_BROADCAST_JFULLSEG } */
+/* LGE_BROADCAST_ISDBT_JAPAN } */
 
 #if defined(CONFIG_LGE_BROADCAST_TDMB)
 	CLK_LOOKUP("core_clk", gcc_blsp2_qup2_spi_apps_clk.c, "f9964000.spi"),
@@ -5038,19 +5049,22 @@ static struct clk_lookup msm_clocks_8974_common[] __initdata = {
 	CLK_LOOKUP("core_clk", gcc_blsp2_uart2_apps_clk.c, "f995e000.serial"),
 	CLK_LOOKUP("core_clk", gcc_blsp2_uart3_apps_clk.c, ""),
 #ifdef CONFIG_LGE_BLUETOOTH
-#ifdef CONFIG_LGE_NFC_SONY_KDDI_EVB
-	CLK_LOOKUP("core_clk", gcc_blsp1_uart5_apps_clk.c, "f9921000.serial"),     // UART5
-#else
 	CLK_LOOKUP("core_clk", gcc_blsp1_uart5_apps_clk.c, "f9921000.uart"),     // UART5
+#else
+	CLK_LOOKUP("core_clk", gcc_blsp1_uart5_apps_clk.c, ""),
 #endif
+#ifdef CONFIG_LGE_BLUETOOTH
+	CLK_LOOKUP("core_clk", gcc_blsp2_uart4_apps_clk.c, "f9960000.uart"),
 #else
 	CLK_LOOKUP("core_clk", gcc_blsp2_uart4_apps_clk.c, ""),
-#endif
-#if defined(CONFIG_LGE_NFC_SONY_CXD2235AGG) || defined(CONFIG_LGE_NFC_SONY_KDDI)
+#endif /* CONFIG_LGE_BLUETOOTH */
+
+#if (defined(CONFIG_MACH_MSM8974_G3) || defined(CONFIG_MACH_MSM8974_DZNY)) && defined(CONFIG_LGE_NFC_SONY)
 	CLK_LOOKUP("core_clk", gcc_blsp2_uart4_apps_clk.c, "f9960000.serial"),
 #else
 	CLK_LOOKUP("core_clk", gcc_blsp2_uart4_apps_clk.c, ""),
 #endif
+
 	CLK_LOOKUP("core_clk", gcc_blsp2_uart5_apps_clk.c, ""),
 #if defined(CONFIG_LGE_IRRC) || defined(CONFIG_LGE_IRDA_KDDI)
 	CLK_LOOKUP("core_clk", gcc_blsp2_uart6_apps_clk.c, "f9962000.serial"),
@@ -5186,6 +5200,14 @@ static struct clk_lookup msm_clocks_8974_common[] __initdata = {
 	/* MM sensor clocks */
 /* clock setting for camera */
 #ifdef CONFIG_MACH_LGE
+#if defined(CONFIG_MACH_MSM8974_G2) || defined(CONFIG_MACH_MSM8974_B1_KR) || defined(CONFIG_MACH_MSM8974_B1W) || defined(CONFIG_MACH_MSM8974_TIGERS)
+	CLK_LOOKUP("cam_src_clk", mmss_gp0_clk_src.c, "20.qcom,camera"),
+	CLK_LOOKUP("cam_clk", camss_gp0_clk.c, "20.qcom,camera"),
+	CLK_LOOKUP("cam_src_clk", gp1_clk_src.c, "6c.qcom,camera"),
+	CLK_LOOKUP("cam_clk", gcc_gp1_clk.c, "6c.qcom,camera"),
+	CLK_LOOKUP("cam_src_clk", gp1_clk_src.c, "6e.qcom,camera"),
+	CLK_LOOKUP("cam_clk", gcc_gp1_clk.c, "6e.qcom,camera"),
+#else
 	CLK_LOOKUP("cam_src_clk", mclk0_clk_src.c, "20.qcom,camera_rev_b"),
 	CLK_LOOKUP("cam_src_clk", mclk2_clk_src.c, "6e.qcom,camera_rev_b"),
 	CLK_LOOKUP("cam_clk", camss_mclk0_clk.c, "20.qcom,camera_rev_b"),
@@ -5204,6 +5226,9 @@ static struct clk_lookup msm_clocks_8974_common[] __initdata = {
 	CLK_LOOKUP("cam_src_clk", mclk2_clk_src.c, "6e.qcom,camera"),
 	CLK_LOOKUP("cam_clk", camss_mclk0_clk.c, "20.qcom,camera"),
 	CLK_LOOKUP("cam_clk", camss_mclk2_clk.c, "6e.qcom,camera"),
+	CLK_LOOKUP("cam_src_clk", mclk2_clk_src.c, "6c.qcom,camera"),
+	CLK_LOOKUP("cam_clk", camss_mclk2_clk.c, "6c.qcom,camera"),
+#endif
 #ifdef CONFIG_IMX091
 	CLK_LOOKUP("cam_src_clk", mclk0_clk_src.c, "34.qcom,camera_kddi"),
 	CLK_LOOKUP("cam_clk", camss_mclk0_clk.c, "34.qcom,camera_kddi"),
@@ -5839,9 +5864,11 @@ static void __init msm8974_clock_post_init(void)
 	 */
 	clk_prepare_enable(&cxo_a_clk_src.c);
 
-#if defined(CONFIG_LGE_NFC) || defined(CONFIG_LGE_NFC_USE_PMIC)
+#if defined(CONFIG_LGE_NFC) && defined(CONFIG_LGE_NFC_USE_PMIC)
 #if defined(CONFIG_LGE_NFC_PN547_C2)
     //clk_prepare_enable(&cxo_d1_pin.c);
+#elif defined(CONFIG_NFC_BCM2079X)
+    clk_prepare_enable(&cxo_d1_pin.c);
 #else
     clk_prepare_enable(&cxo_d1_pin.c);
 #endif

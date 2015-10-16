@@ -27,11 +27,24 @@
 		lge,lge_android_usb,factory_composition = "acm,diag";
 	};
 
+	/* ModemBSP: DDM tty & smd driver */
+	qcom,smdttyatnt {
+		compatible = "qcom,smdttyatnt";
+
+		smdtty_data11: qcom,smdtty-data11 {
+			qcom,smdtty-remote = "modem";
+			qcom,smdtty-port-name = "DATA11";
+		};
+	};
+
 	qcom,smdtty {
 		smdtty_ds: qcom,smdtty-ds {
 			qcom,smdtty-remote = "modem";
 			qcom,smdtty-port-name = "DS";
 		};
+
+		/* ModemBSP: DDM tty & smd driver */
+		/delete-node/qcom,smdtty-data11;
 	};
 };
 
@@ -51,6 +64,7 @@
 	redriver_3p3-supply = <&pm8941_l23>;
 	qcom,otg-capability;
 	qcom,usb3_rx_eq = <0x0>;
+	qcom,utmi-clk-rate = <24000000>;
 };
 
 &usb_otg {

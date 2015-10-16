@@ -190,6 +190,15 @@ enum {
 	TOUCH_VENDOR_TPK,
 };
 
+#if defined(CONFIG_MACH_MSM8974_G2_OPEN_COM) || defined(CONFIG_MACH_MSM8974_G2_OPT_AU)
+enum {
+	TOUCH_PANEL_UNKNOWN = 0,
+	TOUCH_PANEL_G1F_LGIT,
+	TOUCH_PANEL_G1F_SSUNTEL,
+	TOUCH_PANEL_G2_LGIT,
+};
+#endif
+
 #if defined(CONFIG_LGE_Z_TOUCHSCREEN)
 enum {
 	TOUCH_PANEL_BAR_PATTERN = 0,
@@ -363,7 +372,7 @@ struct lge_touch_data {
 	struct delayed_work			work_ime_drumming;
 #endif
 #if defined(CONFIG_FB)
-	struct notifier_block notif;
+	struct notifier_block		fb_notif;
 #elif defined(CONFIG_HAS_EARLYSUSPEND)
 	struct early_suspend		early_suspend;
 #endif

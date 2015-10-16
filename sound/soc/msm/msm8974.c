@@ -26,11 +26,11 @@
 #include <sound/pcm.h>
 #include <sound/jack.h>
 #include <sound/q6afe-v2.h>
+#include <sound/q6core.h>
 #include <sound/pcm_params.h>
 #include <asm/mach-types.h>
 #include <mach/subsystem_notif.h>
 #include "qdsp6v2/msm-pcm-routing-v2.h"
-#include "qdsp6v2/q6core.h"
 #include "../codecs/wcd9xxx-common.h"
 #include "../codecs/wcd9320.h"
 #include "../codecs/tpa2015d1.h"
@@ -91,7 +91,7 @@ static int msm8974_auxpcm_rate = 8000;
 
 static void *adsp_state_notifier;
 
-#define ADSP_STATE_READY_TIMEOUT_MS 3000
+#define ADSP_STATE_READY_TIMEOUT_MS 50
 
 #ifdef CONFIG_SND_SOC_CS35L32
 #define GPIO_QUAT_MI2S_MCLK   57
@@ -200,10 +200,6 @@ static const struct soc_enum msm8974_auxpcm_enum[] = {
 };
 
 #ifdef CONFIG_SND_FM_RADIO
-#undef CONFIG_SND_FM_SWTICH
-#endif
-
-#ifdef CONFIG_SND_FM_RADIO
 
 atomic_t tert_mi2s_rsc_ref;
 #define GPIO_TERT_MI2S_SCK    74
@@ -214,7 +210,7 @@ atomic_t tert_mi2s_rsc_ref;
 #define GPIO_FM_RADIO_SWITCH 69
 #endif
 
-#if 0
+#ifndef CONFIG_SND_SOC_CS35L32
 struct request_gpio {
 	unsigned gpio_no;
 	char *gpio_name;
@@ -3501,6 +3497,44 @@ static struct snd_soc_dai_link msm8974_lge_dai_link[] = {
 		.be_id = MSM_FRONTEND_DAI_MULTIMEDIA1
 	},
 #endif /*CONFIG_SND_INCALL_MUSIC_SUPPORT*/
+
+#ifdef CONFIG_SND_LGE_DSDP_DUAL_AUDIO
+	{
+		.name = "Dual Audio",
+		.stream_name = "MultiMedia3",
+		.cpu_dai_name   = "MultiMedia3",
+		.platform_name  = "msm-pcm-dsp.0",
+		.dynamic = 1,
+		.codec_dai_name = "snd-soc-dummy-dai",
+		.codec_name = "snd-soc-dummy",
+		.trigger = {SND_SOC_DPCM_TRIGGER_POST,
+			SND_SOC_DPCM_TRIGGER_POST},
+		.ignore_suspend = 1,
+		/* this dainlink has playback support */
+		.ignore_pmdown_time = 1,
+		.be_id = MSM_FRONTEND_DAI_MULTIMEDIA3,
+	},
+#else
+	/* DUMMY DAI Link */
+	{
+		.name = "Dummy DAI 106",
+		.stream_name = "MultiMedia1",
+		.cpu_dai_name	= "MultiMedia1",
+		.platform_name  = "msm-pcm-dsp.0",
+		.dynamic = 1,
+		.trigger = {SND_SOC_DPCM_TRIGGER_POST,
+			SND_SOC_DPCM_TRIGGER_POST},
+		.codec_dai_name = "snd-soc-dummy-dai",
+		.codec_name = "snd-soc-dummy",
+		.ignore_suspend = 1,
+		/* this dainlink has playback support */
+		.ignore_pmdown_time = 1,
+		.be_id = MSM_FRONTEND_DAI_MULTIMEDIA1
+	},
+#endif /*CONFIG_SND_LGE_DSDP_DUAL_AUDIO*/
+
+
+
 };
 
 static struct snd_soc_dai_link msm8974_dummy_dai_link[] = {

@@ -2343,10 +2343,9 @@ static void bq24296_batt_external_power_changed(struct power_supply *psy)
 	/* For MST, boost current up over 900mA in spite of USB */
 	if (safety_timer_enabled == 0 && ret.intval < 900) {
 		ret.intval = 900;
+		bq24296_charger_psy_setprop(chip, psy_this, INPUT_CURRENT_MAX, ret.intval);
 		pr_info("safety timer disabled.... input current limit = %d\n",ret.intval);
 	}
-
-	bq24296_charger_psy_setprop(chip, psy_this, INPUT_CURRENT_MAX, ret.intval);
 #else
 #if defined(CONFIG_CHARGER_UNIFIED_WLC)
 	if (wireless_charging) {

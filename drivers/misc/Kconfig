@@ -691,6 +691,13 @@ config LGE_IRRC
         default n
         help
            If you say yes here you get support for IrRC
+
+config EARJACK_DEBUGGER
+	bool "Earjack UART debugger support"
+	default n
+	help
+	  Support earjack type UART debugger cable
+
 config BU52031NVX
        tristate "Cradle BU52031NVX support"
        help

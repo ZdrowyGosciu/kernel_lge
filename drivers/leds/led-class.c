@@ -45,6 +45,11 @@ extern void make_input_led_pattern(int patterns[],
 extern void set_kpdbl_pattern (int pattern);
 static int onoff_rgb;
 #endif
+
+#if defined(CONFIG_LEDS_KEY_REAR)
+extern void make_rear_blink_led_pattern(int delay_on, int delay_off);
+#endif
+
 #if defined(CONFIG_LEDS_WINDOW_COLOR)
 enum WINDOW_COLORS window_color;
 unsigned char win_color[] = "com.lge.systemui.theme.xxxxxx";
@@ -117,7 +122,8 @@ static ssize_t led_max_brightness_show(struct device *dev,
 	return snprintf(buf, LED_BUFF_SIZE, "%u\n", led_cdev->max_brightness);
 }
 
-#if defined(CONFIG_MACH_MSM8974_G3_VZW) || defined(CONFIG_MACH_MSM8974_G3_LRA)
+#if defined(CONFIG_MACH_MSM8974_G3_VZW) || defined(CONFIG_MACH_MSM8974_G3_LRA) \
+    || defined(CONFIG_MACH_MSM8974_G2_VZW)
 static int lge_thm_status;
 static ssize_t thermald_status_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
@@ -149,7 +155,8 @@ static struct device_attribute led_class_attrs[] = {
 	__ATTR(brightness, 0644, led_brightness_show, led_brightness_store),
 	__ATTR(max_brightness, 0644, led_max_brightness_show,
 			led_max_brightness_store),
-#if defined(CONFIG_MACH_MSM8974_G3_VZW) || defined(CONFIG_MACH_MSM8974_G3_LRA)
+#if defined(CONFIG_MACH_MSM8974_G3_VZW) || defined(CONFIG_MACH_MSM8974_G3_LRA) \
+    || defined(CONFIG_MACH_MSM8974_G2_VZW)
 	__ATTR(thermald_status, 0644, thermald_status_show, thermald_status_store),
 #endif
 #ifdef CONFIG_LEDS_TRIGGERS
@@ -292,16 +299,6 @@ static ssize_t set_pattern(struct device *dev, struct device_attribute *attr, co
 	if (lge_get_boot_mode() <= LGE_BOOT_MODE_CHARGERLOGO) {
 		printk("[RGB LED] pattern_num = %d\n", pattern_num);
 
-#if !(defined(CONFIG_MACH_MSM8974_G3_LGU) || defined(CONFIG_MACH_MSM8974_G3_SKT) || \
-	defined(CONFIG_MACH_MSM8974_G3_KT) || defined(CONFIG_MACH_MSM8974_G3_ATT) || \
-	defined(CONFIG_MACH_MSM8974_G3_VZW) || defined(CONFIG_MACH_MSM8974_G3_SPR_US) || \
-	defined(CONFIG_MACH_MSM8974_G3_USC_US) || defined(CONFIG_MACH_MSM8974_G3_ACG_US) || \
-	defined(CONFIG_MACH_MSM8974_G3_TMO_US) || defined(CONFIG_MACH_MSM8974_G3_GLOBAL_COM) || \
-	defined(CONFIG_MACH_MSM8974_G3_CN) || defined(CONFIG_MACH_MSM8974_G3_CA) || \
-	defined(CONFIG_MACH_MSM8974_G3_LRA))
-		if (!pattern_num || pattern_num == 35 || pattern_num == 36)
-			set_kpdbl_pattern(pattern_num);
-#endif
 		if ((pattern_num != 35) && (pattern_num != 36))
 			change_led_pattern(pattern_num);
 	}
@@ -479,6 +476,57 @@ static ssize_t make_blink_pattern(struct device *dev, struct device_attribute *a
 
 static DEVICE_ATTR(blink_patterns, 0644, confirm_blink_pattern, make_blink_pattern);
 
+#if defined(CONFIG_LEDS_KEY_REAR)
+static ssize_t get_rear_pattern(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	return 0;
+}
+
+static ssize_t set_rear_pattern(struct device *dev, struct device_attribute *attr, const char *buf, size_t size)
+{
+	ssize_t ret = -EINVAL;
+	int pattern_num = 0;
+
+	if (sscanf(buf, "%d", &pattern_num) != 1) {
+		printk("[REAR LED] bad arguments ");
+	}
+	ret = size;
+
+	if (lge_get_boot_mode() <= LGE_BOOT_MODE_CHARGERLOGO) {
+		printk("[REAR LED] pattern_num = %d\n", pattern_num);
+
+		set_kpdbl_pattern(pattern_num);
+	}
+	return ret;
+}
+
+static DEVICE_ATTR(rear_setting, 0644, get_rear_pattern, set_rear_pattern);
+
+static ssize_t confirm_rear_blink_pattern(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	return 0;
+}
+
+static ssize_t make_rear_blink_pattern(struct device *dev, struct device_attribute *attr, const char *buf, size_t size)
+{
+	ssize_t ret = -EINVAL;
+	int rgb;
+	int delay_on = 0;
+	int delay_off = 0;
+
+	if (sscanf(buf, "0x%06x,%d,%d", &rgb, &delay_on, &delay_off) != 3)
+		printk("[RGB LED] make_rear_blink_pattern() bad arguments ");
+
+	ret = size;
+
+	make_rear_blink_led_pattern(delay_on, delay_off);
+
+	return ret;
+}
+
+static DEVICE_ATTR(rear_blink_patterns, 0644, confirm_rear_blink_pattern, make_rear_blink_pattern);
+#endif
+
 static ssize_t confirm_onoff_pattern(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	return snprintf(buf, LED_BUFF_SIZE, "0x%06x\n", onoff_rgb);
@@ -502,7 +550,6 @@ static ssize_t make_onoff_pattern(struct device *dev, struct device_attribute *a
 
 static DEVICE_ATTR(onoff_patterns, 0644, confirm_onoff_pattern, make_onoff_pattern);
 
-
 int led_pattern_sysfs_register(void)
 {
 	struct class *lg_rgb;
@@ -520,6 +567,14 @@ int led_pattern_sysfs_register(void)
 
 	if (device_create_file(pattern_sysfs_dev, &dev_attr_blink_patterns) < 0)
 		printk("Failed to create device file(%s)!\n", dev_attr_blink_patterns.attr.name);
+
+#if defined(CONFIG_LEDS_KEY_REAR)
+	if (device_create_file(pattern_sysfs_dev, &dev_attr_rear_setting) < 0)
+		printk("Failed to create device file(%s)!\n", dev_attr_rear_setting.attr.name);
+
+	if (device_create_file(pattern_sysfs_dev, &dev_attr_rear_blink_patterns) < 0)
+		printk("Failed to create device file(%s)!\n", dev_attr_rear_blink_patterns.attr.name);
+#endif
 
 	if (device_create_file(pattern_sysfs_dev, &dev_attr_input_patterns) < 0)
 		printk("Failed to create device file(%s)!\n", dev_attr_input_patterns.attr.name);

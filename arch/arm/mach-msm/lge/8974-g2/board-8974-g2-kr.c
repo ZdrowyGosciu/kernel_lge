@@ -138,6 +138,15 @@ void __init msm8974_add_drivers(void)
 #if defined(CONFIG_LGE_PM_BATTERY_ID_CHECKER)
 	lge_battery_id_devices();
 #endif
+#if defined(CONFIG_LCD_KCAL)
+	lge_add_lcd_kcal_devices();
+#endif
+#ifdef CONFIG_USB_G_LGE_ANDROID
+	lge_add_android_usb_devices();
+#endif
+#ifdef CONFIG_LGE_DIAG_USB_ACCESS_LOCK
+	lge_add_diag_devices();
+#endif
 }
 
 static struct of_dev_auxdata msm_hsic_host_adata[] = {

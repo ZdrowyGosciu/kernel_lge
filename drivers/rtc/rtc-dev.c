@@ -15,7 +15,7 @@
 #include <linux/rtc.h>
 #include <linux/sched.h>
 #include "rtc-core.h"
-#ifdef CONFIG_RTC_PWROFF_ALARM
+#ifdef CONFIG_LGE_PM_RTC_PWROFF_ALARM
 #include <linux/syscalls.h>
 #endif
 
@@ -23,7 +23,7 @@ static dev_t rtc_devt;
 
 #define RTC_DEV_MAX 16 /* 16 RTCs should be enough for everyone... */
 
-#ifdef CONFIG_RTC_PWROFF_ALARM
+#ifdef CONFIG_LGE_PM_RTC_PWROFF_ALARM
 bool poweron_alarm;
 struct rtc_wkalrm g_poalarm;
 #endif
@@ -365,7 +365,7 @@ static long rtc_dev_ioctl(struct file *file,
 
 	case RTC_AIE_ON:
 		mutex_unlock(&rtc->ops_lock);
-#ifdef CONFIG_RTC_PWROFF_ALARM
+#ifdef CONFIG_LGE_PM_RTC_PWROFF_ALARM
 		if(poweron_alarm == 0) {
 			poweron_alarm = 1;
 		}
@@ -377,7 +377,7 @@ static long rtc_dev_ioctl(struct file *file,
 
 	case RTC_AIE_OFF:
 		mutex_unlock(&rtc->ops_lock);
-#ifdef CONFIG_RTC_PWROFF_ALARM
+#ifdef CONFIG_LGE_PM_RTC_PWROFF_ALARM
 		if(poweron_alarm == 1) {
 			poweron_alarm = 0;
 		}
@@ -433,7 +433,7 @@ static long rtc_dev_ioctl(struct file *file,
 
 		return rtc_set_alarm(rtc, &alarm);
 
-#ifdef CONFIG_RTC_PWROFF_ALARM
+#ifdef CONFIG_LGE_PM_RTC_PWROFF_ALARM
 	case RTC_DEVICE_UP:
 		mutex_unlock(&rtc->ops_lock);
 		if (copy_from_user(&g_poalarm, uarg, sizeof(g_poalarm))) {
@@ -565,7 +565,7 @@ void __init rtc_dev_init(void)
 		printk(KERN_ERR "%s: failed to allocate char dev region\n",
 			__FILE__);
 
-#ifdef CONFIG_RTC_PWROFF_ALARM
+#ifdef CONFIG_LGE_PM_RTC_PWROFF_ALARM
 	memset(&g_poalarm, 0, sizeof(g_poalarm));
 #endif
 }

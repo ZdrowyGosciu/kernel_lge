@@ -72,6 +72,7 @@ obj-$(CONFIG_QFP_FUSE) += qfp_fuse.o
 obj-$(CONFIG_TI_DRV2667) += ti_drv2667.o
 obj-$(CONFIG_QPNP_MISC) += qpnp-misc.o
 obj-$(CONFIG_LGE_IRRC)			+= lge_uei_irrc.o
+obj-$(CONFIG_EARJACK_DEBUGGER) += lge_earjack_debugger.o
 obj-$(CONFIG_BU52031NVX) += pm8xxx-cradle.o
 obj-$(CONFIG_BU52031NVX_CARKIT) += pm8xxx-carkit.o
 obj-$(CONFIG_TSPDRV) += tspdrv/

@@ -62,10 +62,14 @@
 		};
 		max17048@36 {
 			status = "ok";
-			max17048,rcomp = <96>;
-			max17048,temp_co_hot = <225>;
-			max17048,temp_co_cold = <5050>;
-			max17048,empty = <0>;
+			max17048,rcomp_lgc = <96>;
+			max17048,temp_co_hot_lgc= <225>;
+			max17048,temp_co_cold_lgc = <5050>;
+			max17048,empty_lgc = <0>;
+			max17048,rcomp_tcd = <106>;
+			max17048,temp_co_hot_tcd= <900>;
+			max17048,temp_co_cold_tcd = <6325>;
+			max17048,empty_tcd = <0>;
 		};
 
 		bq24296@6b {

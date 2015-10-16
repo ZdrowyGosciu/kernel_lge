@@ -90,7 +90,7 @@ struct rtc_pll_info {
 
 #define RTC_PLL_GET	_IOR('p', 0x11, struct rtc_pll_info)  /* Get PLL correction */
 #define RTC_PLL_SET	_IOW('p', 0x12, struct rtc_pll_info)  /* Set PLL correction */
-#ifdef CONFIG_RTC_PWROFF_ALARM
+#ifdef CONFIG_LGE_PM_RTC_PWROFF_ALARM
 #define RTC_DEVICE_UP	_IOW('p', 0x13, struct rtc_wkalrm)  /* Set Power Off alarm */
 #endif
 
@@ -155,7 +155,7 @@ struct rtc_class_ops {
 	int (*set_mmss)(struct device *, unsigned long secs);
 	int (*read_callback)(struct device *, int data);
 	int (*alarm_irq_enable)(struct device *, unsigned int enabled);
-#ifdef CONFIG_RTC_PWROFF_ALARM
+#ifdef CONFIG_LGE_PM_RTC_PWROFF_ALARM
 	int (*set_po_alarm)(struct device *, struct rtc_wkalrm *);
 #endif
 };
@@ -274,7 +274,7 @@ int rtc_timer_start(struct rtc_device *rtc, struct rtc_timer* timer,
 int rtc_timer_cancel(struct rtc_device *rtc, struct rtc_timer* timer);
 void rtc_timer_do_work(struct work_struct *work);
 
-#ifdef CONFIG_RTC_PWROFF_ALARM
+#ifdef CONFIG_LGE_PM_RTC_PWROFF_ALARM
 /*
 enum RTC_PWR_TYPE {
 	LG_RTC_POWER_ON_ENABLE,

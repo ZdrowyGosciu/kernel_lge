@@ -116,6 +116,14 @@ DEFINE_LED_TRIGGER(bl_led_trigger);
 static struct backlight_device *bl_dev;
 #endif
 
+#if defined(CONFIG_LGE_MIPI_DZNY_JDI_INCELL_FHD_VIDEO_PANEL)
+//#include <linux/input/lge_touch_notify.h>
+#endif
+
+#if defined(CONFIG_LGE_MIPI_DZNY_JDI_INCELL_FHD_VIDEO_PANEL)
+extern int sm5107_mode_change(int mode);
+extern int dw8768_mode_change(int mode);
+#endif
 void mdss_dsi_panel_pwm_cfg(struct mdss_dsi_ctrl_pdata *ctrl)
 {
 	ctrl->pwm_bl = pwm_request(ctrl->pwm_lpg_chan, "lcd-bklt");
@@ -254,7 +262,7 @@ static void mdss_dsi_panel_bklt_dcs(struct mdss_dsi_ctrl_pdata *ctrl, int level)
 
 	mdss_dsi_cmdlist_put(ctrl, &cmdreq);
 }
-#ifdef CONFIG_MACH_MSM8974_G3
+#if defined(CONFIG_MACH_MSM8974_G3) || defined(CONFIG_MACH_MSM8974_DZNY)
 void mdss_dsi_panel_io(struct mdss_panel_data *pdata, int enable)
 {
 	struct mdss_dsi_ctrl_pdata *ctrl_pdata = NULL;
@@ -283,10 +291,14 @@ void mdss_dsi_panel_io(struct mdss_panel_data *pdata, int enable)
 }
 #endif
 
+#if defined(CONFIG_B1_LGD_PANEL)
+int mdss_dsi_request_gpios(struct mdss_dsi_ctrl_pdata *ctrl_pdata)
+#else
 static int mdss_dsi_request_gpios(struct mdss_dsi_ctrl_pdata *ctrl_pdata)
+#endif
 {
 	int rc = 0;
-
+#ifndef CONFIG_LGE_MIPI_DZNY_JDI_INCELL_FHD_VIDEO_PANEL
 	if (gpio_is_valid(ctrl_pdata->disp_en_gpio)) {
 		rc = gpio_request(ctrl_pdata->disp_en_gpio,
 						"disp_enable");
@@ -296,6 +308,7 @@ static int mdss_dsi_request_gpios(struct mdss_dsi_ctrl_pdata *ctrl_pdata)
 			goto disp_en_gpio_err;
 		}
 	}
+#endif // CONFIG_LGE_MIPI_DZNY_JDI_INCELL_FHD_VIDEO_PANEL
 #ifdef CONFIG_MFD_TPS65132
 	if (ctrl_pdata->num_of_dsv_enable_pin > 1)
 		if (gpio_is_valid(ctrl_pdata->disp_en_gpio2)) {
@@ -329,10 +342,77 @@ mode_gpio_err:
 rst_gpio_err:
 	if (gpio_is_valid(ctrl_pdata->disp_en_gpio))
 		gpio_free(ctrl_pdata->disp_en_gpio);
+#ifndef CONFIG_LGE_MIPI_DZNY_JDI_INCELL_FHD_VIDEO_PANEL
 disp_en_gpio_err:
+#endif
 	return rc;
 }
 
+#if defined(CONFIG_B1_LGD_PANEL)
+void mdss_dsi_free_gpios(struct mdss_dsi_ctrl_pdata *ctrl_pdata)
+{
+	if (gpio_is_valid(ctrl_pdata->rst_gpio))
+		gpio_free(ctrl_pdata->rst_gpio);
+
+	if (gpio_is_valid(ctrl_pdata->disp_en_gpio))
+		gpio_free(ctrl_pdata->disp_en_gpio);
+
+	if (gpio_is_valid(ctrl_pdata->mode_gpio))
+		gpio_free(ctrl_pdata->mode_gpio);
+}
+
+int mdss_dsi_panel_reset(struct mdss_panel_data *pdata, int enable)
+{
+	struct mdss_dsi_ctrl_pdata *ctrl_pdata = NULL;
+	struct mdss_panel_info *pinfo = NULL;
+	int i, rc = 0;
+
+	if (pdata == NULL) {
+		pr_err("%s: Invalid input data\n", __func__);
+		return -EINVAL;
+	}
+
+	ctrl_pdata = container_of(pdata, struct mdss_dsi_ctrl_pdata,
+				panel_data);
+
+	if (!gpio_is_valid(ctrl_pdata->rst_gpio)) {
+		pr_debug("%s:%d, reset line not configured\n",
+			   __func__, __LINE__);
+		return rc;
+	}
+
+	pr_debug("%s: enable = %d\n", __func__, enable);
+	pinfo = &(ctrl_pdata->panel_data.panel_info);
+
+	if (enable) {
+		if (!pinfo->panel_power_on) {
+			for (i = 0; i < pdata->panel_info.rst_seq_len; ++i) {
+				gpio_set_value((ctrl_pdata->rst_gpio),
+					pdata->panel_info.rst_seq[i]);
+				if (pdata->panel_info.rst_seq[++i])
+					usleep(pinfo->rst_seq[i] * 1000);
+			}
+		}
+
+		if (gpio_is_valid(ctrl_pdata->mode_gpio)) {
+			if (pinfo->mode_gpio_state == MODE_GPIO_HIGH)
+				gpio_set_value((ctrl_pdata->mode_gpio), 1);
+			else if (pinfo->mode_gpio_state == MODE_GPIO_LOW)
+				gpio_set_value((ctrl_pdata->mode_gpio), 0);
+		}
+
+		if (ctrl_pdata->ctrl_state & CTRL_STATE_PANEL_INIT) {
+			pr_debug("%s: Panel Not properly turned OFF\n",
+						__func__);
+			ctrl_pdata->ctrl_state &= ~CTRL_STATE_PANEL_INIT;
+			pr_debug("%s: Reset panel done\n", __func__);
+		}
+	} else {
+		gpio_set_value((ctrl_pdata->rst_gpio), 0);
+	}
+	return rc;
+}
+#else
 int mdss_dsi_panel_reset(struct mdss_panel_data *pdata, int enable)
 {
 	struct mdss_dsi_ctrl_pdata *ctrl_pdata = NULL;
@@ -395,12 +475,23 @@ int mdss_dsi_panel_reset(struct mdss_panel_data *pdata, int enable)
 #ifdef CONFIG_MACH_LGE
 			mdelay(5);
 #endif
+
+#if defined(CONFIG_LGE_MIPI_DZNY_JDI_INCELL_FHD_VIDEO_PANEL)
+i=0;
+usleep(10 * 1000);
+gpio_set_value((ctrl_pdata->rst_gpio), 1 );
+usleep(10 * 1000);
+gpio_set_value((ctrl_pdata->rst_gpio), 0 );
+usleep(10* 1000);
+gpio_set_value((ctrl_pdata->rst_gpio), 1 );
+#else
 			for (i = 0; i < pdata->panel_info.rst_seq_len; ++i) {
 				gpio_set_value((ctrl_pdata->rst_gpio),
 					pdata->panel_info.rst_seq[i]);
 				if (pdata->panel_info.rst_seq[++i])
 					usleep(pinfo->rst_seq[i] * 1000);
 			}
+#endif
 		}
 
 #ifdef CONFIG_MFD_TPS65132
@@ -431,7 +522,7 @@ int mdss_dsi_panel_reset(struct mdss_panel_data *pdata, int enable)
 			pr_debug("%s: Reset panel done\n", __func__);
 		}
 	} else {
-#ifndef CONFIG_MACH_MSM8974_G2
+#if !defined(CONFIG_MACH_MSM8974_G2) && !defined(CONFIG_MACH_MSM8974_TIGERS)
 		if (gpio_is_valid(ctrl_pdata->disp_en_gpio)) {
 			gpio_set_value((ctrl_pdata->disp_en_gpio), 0);
 			gpio_free(ctrl_pdata->disp_en_gpio);
@@ -457,13 +548,30 @@ int mdss_dsi_panel_reset(struct mdss_panel_data *pdata, int enable)
 #ifdef CONFIG_MACH_LGE
 			mdelay(25);
 #endif
-		gpio_set_value((ctrl_pdata->rst_gpio), 0);
-		gpio_free(ctrl_pdata->rst_gpio);
+
+#if defined(CONFIG_LGE_MIPI_DZNY_JDI_INCELL_FHD_VIDEO_PANEL)
+	
+		if (ctrl_pdata->dsv_manufacturer == DSV_SM5107) {
+			sm5107_mode_change(0);
+			//touch_notifier_call_chain(LCD_EVENT_DSV_ON, NULL);
+		}
+		else if (ctrl_pdata->dsv_manufacturer == DSV_DW8768) {
+			dw8768_mode_change(0);
+		}
+
+		mdelay(10);
+#else
+        gpio_set_value((ctrl_pdata->rst_gpio), 0);
+        gpio_free(ctrl_pdata->rst_gpio);
+		
+#endif // CONFIG_LGE_MIPI_DZNY_JDI_INCELL_FHD_VIDEO_PANEL
+
+
 #ifdef CONFIG_MACH_LGE
 			mdelay(10);
 #endif
 
-#ifdef CONFIG_MACH_MSM8974_G2
+#if defined(CONFIG_MACH_MSM8974_G2) || defined(CONFIG_MACH_MSM8974_TIGERS)
 		if (gpio_is_valid(ctrl_pdata->disp_en_gpio)) {
 			gpio_set_value((ctrl_pdata->disp_en_gpio), 0);
 			gpio_free(ctrl_pdata->disp_en_gpio);
@@ -475,6 +583,7 @@ int mdss_dsi_panel_reset(struct mdss_panel_data *pdata, int enable)
 	}
 	return rc;
 }
+#endif
 
 static char caset[] = {0x2a, 0x00, 0x00, 0x03, 0x00};	/* DTYPE_DCS_LWRITE */
 static char paset[] = {0x2b, 0x00, 0x00, 0x05, 0x00};	/* DTYPE_DCS_LWRITE */
